@@ -213,38 +213,6 @@
 			>{min > 0 ? `(minimal ${min})` : '(opsional)'}</span
 		>
 	</span>
-	{#if frequent.length > 0}
-		<div class="mb-2 flex flex-wrap items-center gap-1.5">
-			<span class="font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2"
-				>Sering dipakai</span
-			>
-			{#each frequent as s (s.name)}
-				<button
-					type="button"
-					onclick={() => void addQuickByName(s.name)}
-					class="rounded-full border hairline border-solid px-2.5 py-1 text-xs text-ink hover:border-safelight hover:text-safelight-dim"
-				>
-					{s.name}
-				</button>
-			{/each}
-		</div>
-	{/if}
-	{#if recent.length > 0}
-		<div class="mb-2 flex flex-wrap items-center gap-1.5">
-			<span class="font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2"
-				>Terakhir dipakai</span
-			>
-			{#each recent as s (s.name)}
-				<button
-					type="button"
-					onclick={() => void addQuickByName(s.name)}
-					class="rounded-full border hairline border-solid px-2.5 py-1 text-xs text-ink hover:border-safelight hover:text-safelight-dim"
-				>
-					{s.name}
-				</button>
-			{/each}
-		</div>
-	{/if}
 	<div
 		class={cn(
 			'w-full border hairline border-solid rounded-[3px] bg-card-2 px-3 py-2 min-h-[42px] flex flex-wrap gap-1.5 items-center cursor-text transition-colors focus-within:border-safelight focus-within:ring-2 focus-within:ring-safelight/15',
@@ -308,6 +276,40 @@
 						>{/if}
 				</button>
 			{/if}
+		</div>
+	{/if}
+	<!-- Saran keyword di BAWAH kolom ketik: bila di atas, kolom ID yang punya riwayat turun
+	     sedangkan kolom EN tidak, dan keduanya tak lagi sejajar. -->
+	{#if frequent.length > 0}
+		<div class="mt-2 flex flex-wrap items-center gap-1.5">
+			<span class="font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2"
+				>Sering dipakai</span
+			>
+			{#each frequent as s (s.name)}
+				<button
+					type="button"
+					onclick={() => void addQuickByName(s.name)}
+					class="rounded-full border hairline border-solid px-2.5 py-1 text-xs text-ink hover:border-safelight hover:text-safelight-dim"
+				>
+					{s.name}
+				</button>
+			{/each}
+		</div>
+	{/if}
+	{#if recent.length > 0}
+		<div class="mt-2 flex flex-wrap items-center gap-1.5">
+			<span class="font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2"
+				>Terakhir dipakai</span
+			>
+			{#each recent as s (s.name)}
+				<button
+					type="button"
+					onclick={() => void addQuickByName(s.name)}
+					class="rounded-full border hairline border-solid px-2.5 py-1 text-xs text-ink hover:border-safelight hover:text-safelight-dim"
+				>
+					{s.name}
+				</button>
+			{/each}
 		</div>
 	{/if}
 	{#if hint}
