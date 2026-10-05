@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   LAKUNA STUDIO — Darkroom Editorial design system
+   ink · paper · safelight · grain
+   (diport dari Next.js globals.css; font via system stack)
+   ───────────────────────────────────────────────────────────── */
+
+@theme {
+  /* Surfaces */
+  --color-ink: #100f0d;
+  --color-ink-2: #1a1814;
+  --color-ink-3: #26231d;
+  --color-paper: #f3f1ea;
+  --color-card: #fbfaf4;
+  --color-card-2: #ffffff;
+
+  /* Accent — ungu frontend (mode gelap: #6f43d6 / lampu #9a6bff).
+     Dulu oranye safelight (#ff4d12); disamakan dengan frontend agar CMS
+     terasa satu produk. */
+  --color-safelight: #6f43d6;
+  --color-safelight-dim: #5733ad;
+  --color-safelight-soft: #6f43d614;
+
+  /* Text & lines on paper */
+  --color-ash: #6b6557;
+  --color-ash-2: #9a9384;
+  --color-line: #100f0d;
+
+  /* Type */
+  --font-display: Georgia, "Times New Roman", serif;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv01", "cv11";
+  background-color: var(--color-paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+::selection {
+  background: var(--color-safelight);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-safelight);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+.font-display {
+  font-optical-sizing: auto;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.hairline {
+  border-color: color-mix(in oklab, var(--color-ink) 12%, transparent);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--color-ink) 22%, transparent);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--color-ink) 38%, transparent);
+  background-clip: padding-box;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.rise {
+  /* backwards (bukan both): setelah animasi selesai tidak ada fill yang
+     menahan `transform`, supaya keturunan `position: fixed` (mis. Modal)
+     tetap mengacu ke viewport, bukan ke elemen ini. */
+  animation: riseIn 0.62s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+.fade {
+  animation: fadeIn 0.8s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .fade {
+    animation: none !important;
+  }
+}
