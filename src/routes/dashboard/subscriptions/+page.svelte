@@ -208,7 +208,7 @@
 			<div>
 				<Kicker class="mb-2">Sekali Beli</Kicker>
 				<h2 class="font-display text-2xl tracking-[-0.01em]">Paket Standar</h2>
-				<p class="mt-1.5 text-sm text-ash">Harga per item yang tampil di halaman pricing.</p>
+				<p class="mt-1.5 text-sm text-ash">Harga per item yang tampil di halaman pricing</p>
 			</div>
 			<div class="text-right shrink-0">
 				<div class="font-display text-[2.2rem] leading-[0.9] tnum">

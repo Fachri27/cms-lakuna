@@ -134,7 +134,7 @@
 		}
 		if (
 			!confirm(
-				`Jalankan settlement periode ${period}? Aksi ini tidak dapat dibatalkan (irreversible) — saldo kontributor akan dihitung ulang untuk periode tersebut.`
+				`Jalankan settlement periode ${period}? Aksi ini tidak dapat dibatalkan (irreversible) — saldo kontributor akan dihitung ulang untuk periode tersebut`
 			)
 		)
 			return;

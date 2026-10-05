@@ -107,7 +107,7 @@
 	<Panel class="p-7">
 		<Kicker class="mb-2">Preset</Kicker>
 		<h2 class="font-display text-2xl tracking-[-0.01em] mb-2">Harga Foto</h2>
-		<p class="text-sm text-ash mb-5">Pilihan harga cepat yang muncul saat upload / edit foto.</p>
+		<p class="text-sm text-ash mb-5">Pilihan harga cepat yang muncul saat upload / edit foto</p>
 
 		{#if loading}
 			<Skeleton class="h-12" />

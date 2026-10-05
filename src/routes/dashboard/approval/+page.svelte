@@ -68,7 +68,7 @@
 	let rejectReasons = $state<string[]>([]);
 	/** Pesan akhir ke kontributor: alasan tercentang + catatan tambahan. */
 	const rejectMessage = $derived(
-		[...rejectReasons.map((r) => `${r}.`), rejectNote.trim()].filter(Boolean).join(' ').slice(0, 500)
+		[...rejectReasons.map((r) => `${r}`), rejectNote.trim()].filter(Boolean).join(' ').slice(0, 500)
 	);
 	function toggleReason(r: string) {
 		rejectReasons = rejectReasons.includes(r)
@@ -513,7 +513,7 @@
 						bind:value={rejectNote}
 						rows={3}
 						maxlength={500}
-						placeholder="Mis. subjek terpotong di tepi kanan; unggah ulang dengan framing lebih longgar."
+						placeholder="Mis. subjek terpotong di tepi kanan; unggah ulang dengan framing lebih longgar"
 						class="mt-2 w-full resize-y rounded-[3px] border hairline bg-transparent px-3 py-2.5 text-sm outline-none focus:border-safelight"
 					></textarea>
 				</label>

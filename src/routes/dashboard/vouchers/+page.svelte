@@ -207,7 +207,7 @@
 	}
 
 	async function handleDelete(id: string) {
-		if (!confirm('Yakin ingin menghapus voucher ini? Riwayat pemakaian ikut terhapus.')) return;
+		if (!confirm('Yakin ingin menghapus voucher ini? Riwayat pemakaian ikut terhapus')) return;
 		try {
 			await api(`/vouchers/${id}`, { method: 'DELETE' });
 			void fetchVouchers();

@@ -240,7 +240,7 @@
 			const d = (json as { data: { layout: unknown; customLayout: boolean } }).data;
 			if (tpl) tpl = { ...tpl, layout: d.layout, customLayout: d.customLayout };
 			if (reset && d.layout) syncEditor(d.layout);
-			message = reset ? 'Tata letak dikembalikan ke bawaan.' : 'Tata letak disimpan. Lisensi lama akan dibuat ulang.';
+			message = reset ? 'Tata letak dikembalikan ke bawaan' : 'Tata letak disimpan. Lisensi lama akan dibuat ulang';
 			await previewTemplate();
 		} catch (e) {
 			message = e instanceof Error ? e.message : 'Simpan gagal';
@@ -308,7 +308,7 @@
 			}
 			tpl = (json as { data: TemplateState }).data;
 			if (tpl.layout) syncEditor(tpl.layout);
-			message = `Template v${tpl.version} aktif (${tpl.pageCount ?? files.length} halaman${tpl.mode === 'overlay' ? ', mode desain jadi' : ''}) — PDF lisensi lama akan dibuat ulang otomatis.`;
+			message = `Template v${tpl.version} aktif (${tpl.pageCount ?? files.length} halaman${tpl.mode === 'overlay' ? ', mode desain jadi' : ''}) — PDF lisensi lama akan dibuat ulang otomatis`;
 			if (fileInput) fileInput.value = '';
 			picked = [];
 			await previewTemplate();
@@ -567,7 +567,7 @@
 								<Btn onclick={() => saveLayout(true)} disabled={savingLayout}>Kembalikan bawaan</Btn>
 							{/if}
 						</div>
-						<p class="mt-2 text-xs text-ash">Setiap simpan langsung menampilkan Preview di samping.</p>
+						<p class="mt-2 text-xs text-ash">Setiap simpan langsung menampilkan Preview di samping</p>
 					</div>
 				{:else if tpl?.configured}
 					<div class="mt-6 border-t hairline pt-5">

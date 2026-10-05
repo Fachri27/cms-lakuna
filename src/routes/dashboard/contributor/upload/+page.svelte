@@ -91,7 +91,7 @@
 				}
 				return;
 			}
-			alert('Foto berhasil diupload dan menunggu persetujuan admin.');
+			alert('Foto berhasil diupload dan menunggu persetujuan admin');
 			goto('/dashboard/contributor');
 		} catch (err) {
 			errors = { general: (err as Error)?.message || 'Terjadi kesalahan' };

@@ -89,23 +89,23 @@
 	// jelas posisi tiap bagian; `uses` menandai field yang tampil — field lain
 	// tersimpan tapi diabaikan frontend (fallback default dipakai bila kosong).
 	const TEXT_SECTIONS: TextSectionDef[] = [
-		{ key: 'hero', label: '01 · Hero', hint: 'Bagian paling atas halaman beranda.', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul (satu baris, menggantikan 2 baris bawaan), teks, tombol, gambar atau video latar (MP4/WebM autoplay bisu)' },
-		{ key: 'arsip', label: '02 · Strip arsip (judul)', hint: 'Judul strip foto berjalan di bawah hero. Fotonya di bawah (02 · Foto strip arsip).', fields: ['kicker', 'title'], uses: 'kicker, judul' },
-		{ key: 'video', label: '03 · Contact sheet (judul)', hint: 'Judul grid video drone. Videonya di bawah (03 · Video contact sheet).', fields: ['kicker', 'title', 'body'], uses: 'kicker, judul, teks' },
-		{ key: 'anjungan_1', label: '04 · Peta Nusantara', hint: 'Judul adegan peta (globe → mendarat).', fields: ['kicker', 'title', 'body'], uses: 'kicker, judul, teks' },
-		{ key: 'harga', label: '06 · Teaser harga', hint: 'Judul, deskripsi, tombol, dan foto latar papan tarif langganan.', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul, teks, tombol, gambar' },
-		{ key: 'banding', label: '07 · Perbandingan pratinjau', hint: 'Judul + teks panel "pratinjau vs unduhan". Fotonya otomatis dari arsip.', fields: ['title', 'body'], uses: 'judul, teks' },
-		{ key: 'percaya', label: '08 · Dipercaya (label)', hint: 'Label kecil di atas dinding logo. Logonya di bawah (08 · Logo pelanggan).', fields: ['kicker'], uses: 'kicker' },
-		{ key: 'mulai', label: '09 · Penutup', hint: 'Ajakan mulai sebelum footer.', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul, teks, tombol, gambar' },
-		{ key: 'manifesto', label: '10 · Manifesto (cadangan)', hint: 'Hanya sebagai foto cadangan latar papan tarif bila section Harga tidak pasang gambar.', fields: ['image'], uses: 'gambar' },
-		{ key: 'etalase', label: '11 · Etalase ekowisata (teks)', hint: 'Teks showcase di atas footer: skrip + judul + tombol. Judul boleh multi-baris (enter = baris baru). Kosong = teks bawaan.', fields: ['kicker', 'title', 'cta'], uses: 'kicker (skrip), judul (multi-baris), tombol' }
+		{ key: 'hero', label: '01 · Hero', hint: 'Bagian paling atas halaman beranda', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul (satu baris, menggantikan 2 baris bawaan), teks, tombol, gambar atau video latar (MP4/WebM autoplay bisu)' },
+		{ key: 'arsip', label: '02 · Strip arsip (judul)', hint: 'Judul strip foto berjalan di bawah hero. Fotonya di bawah (02 · Foto strip arsip)', fields: ['kicker', 'title'], uses: 'kicker, judul' },
+		{ key: 'video', label: '03 · Contact sheet (judul)', hint: 'Judul grid video drone. Videonya di bawah (03 · Video contact sheet)', fields: ['kicker', 'title', 'body'], uses: 'kicker, judul, teks' },
+		{ key: 'anjungan_1', label: '04 · Peta Nusantara', hint: 'Judul adegan peta (globe → mendarat)', fields: ['kicker', 'title', 'body'], uses: 'kicker, judul, teks' },
+		{ key: 'harga', label: '06 · Teaser harga', hint: 'Judul, deskripsi, tombol, dan foto latar papan tarif langganan', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul, teks, tombol, gambar' },
+		{ key: 'banding', label: '07 · Perbandingan pratinjau', hint: 'Judul + teks panel "pratinjau vs unduhan". Fotonya otomatis dari arsip', fields: ['title', 'body'], uses: 'judul, teks' },
+		{ key: 'percaya', label: '08 · Dipercaya (label)', hint: 'Label kecil di atas dinding logo. Logonya di bawah (08 · Logo pelanggan)', fields: ['kicker'], uses: 'kicker' },
+		{ key: 'mulai', label: '09 · Penutup', hint: 'Ajakan mulai sebelum footer', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul, teks, tombol, gambar' },
+		{ key: 'manifesto', label: '10 · Manifesto (cadangan)', hint: 'Hanya sebagai foto cadangan latar papan tarif bila section Harga tidak pasang gambar', fields: ['image'], uses: 'gambar' },
+		{ key: 'etalase', label: '11 · Etalase ekowisata (teks)', hint: 'Teks showcase di atas footer: skrip + judul + tombol. Judul boleh multi-baris (enter = baris baru). Kosong = teks bawaan', fields: ['kicker', 'title', 'cta'], uses: 'kicker (skrip), judul (multi-baris), tombol' }
 	];
 
 	const PHOTO_SECTIONS: PhotoSectionDef[] = [
 		{
 			key: 'journeys',
 			label: '02 · Foto strip arsip',
-			hint: 'Kurasi foto untuk strip berjalan. Kosong = foto terbaru otomatis.',
+			hint: 'Kurasi foto untuk strip berjalan. Kosong = foto terbaru otomatis',
 			suggested: 12,
 			max: null,
 			assetType: 'FOTO'
@@ -113,7 +113,7 @@
 		{
 			key: 'klip',
 			label: '03 · Video contact sheet',
-			hint: 'Hanya video terpilih yang tampil di contact sheet beranda (6 per halaman). Kosong = video terbaru otomatis.',
+			hint: 'Hanya video terpilih yang tampil di contact sheet beranda (6 per halaman). Kosong = video terbaru otomatis',
 			suggested: 6,
 			max: 12,
 			assetType: 'VIDEO'
@@ -121,7 +121,7 @@
 		{
 			key: 'orbit',
 			label: '05 · Foto galeri orbit',
-			hint: 'Galeri orbit 3D di beranda. Maks 8 foto — pilih yang terbaik. Kosong = foto terbaru otomatis.',
+			hint: 'Galeri orbit 3D di beranda. Maks 8 foto — pilih yang terbaik. Kosong = foto terbaru otomatis',
 			suggested: 8,
 			max: 8,
 			assetType: 'FOTO'
@@ -129,7 +129,7 @@
 		{
 			key: 'percaya',
 			label: '08 · Logo pelanggan',
-			hint: 'Tiap foto terpilih tampil sebagai satu logo di dinding "Dipercaya". Pakai gambar logo (PNG kontras, bukan foto arsip). Urutan = urutan tampil.',
+			hint: 'Tiap foto terpilih tampil sebagai satu logo di dinding "Dipercaya". Pakai gambar logo (PNG kontras, bukan foto arsip). Urutan = urutan tampil',
 			suggested: 5,
 			max: 7,
 			assetType: 'FOTO'
@@ -137,9 +137,25 @@
 		{
 			key: 'etalase',
 			label: '11 · Foto etalase ekowisata',
-			hint: 'Foto showcase ekowisata di atas footer (maks 4). Urutan = urutan tampil. Kosong = unggulan + terbaru otomatis.',
+			hint: 'Foto showcase ekowisata di atas footer (maks 4). Urutan = urutan tampil. Kosong = unggulan + terbaru otomatis',
 			suggested: 4,
 			max: 4,
+			assetType: 'FOTO'
+		},
+		{
+			key: 'koridor_kanan',
+			label: '12 · Koridor kanan (footer)',
+			hint: 'Foto rel kanan koridor footer (maks 12). Kosong = paruh pertama arsip terbaru',
+			suggested: 9,
+			max: 12,
+			assetType: 'FOTO'
+		},
+		{
+			key: 'koridor_kiri',
+			label: '13 · Koridor kiri (footer)',
+			hint: 'Foto rel kiri koridor footer (maks 12). Kosong = paruh kedua arsip terbaru',
+			suggested: 9,
+			max: 12,
 			assetType: 'FOTO'
 		}
 	];
@@ -313,6 +329,18 @@
 		st.selected = next;
 	}
 
+	/** Geser dalam barisnya (strip arsip: ganjil = atas, genap = bawah). */
+	function movePhotoRow(key: string, id: string, dir: -1 | 1) {
+		const st = photoStates[key];
+		const i = st.selected.indexOf(id);
+		if (i < 0) return;
+		const j = i + dir * 2;
+		if (j < 0 || j >= st.selected.length) return;
+		const next = [...st.selected];
+		[next[i], next[j]] = [next[j], next[i]];
+		st.selected = next;
+	}
+
 	async function savePhotos(key: string, e: SubmitEvent) {
 		e.preventDefault();
 		const st = photoStates[key];
@@ -410,7 +438,7 @@
 								class="hidden"
 								onchange={(e) => pickImage(s.key, e)}
 							/>
-							{#if s.key === 'hero'}<p class="mt-2 text-[11px] leading-relaxed text-ash-2">MP4/WebM autoplay bisu sebagai latar. File besar otomatis dikompresi. Video hanya untuk hero.</p>{/if}
+							{#if s.key === 'hero'}<p class="mt-2 text-[11px] leading-relaxed text-ash-2">MP4/WebM autoplay bisu sebagai latar. File besar otomatis dikompresi. Video hanya untuk hero</p>{/if}
 							{#if st.imageKey && !st.image}<p class="mt-2 break-all font-mono text-[10px] text-ash-2">{st.imageKey}</p>{/if}
 						</div>
 						{:else}
@@ -526,6 +554,57 @@
 								<p class="rounded-[3px] border border-dashed border-ink/15 px-4 py-6 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2">
 									Belum ada foto dipilih — pilih dari daftar di bawah
 								</p>
+							{:else if s.key === 'journeys'}
+								<!-- Strip arsip tampil dua baris di landing: urutan ganjil =
+									baris atas, genap = baris bawah. Panah menggeser dalam
+									barisnya; hapus menggeser urutan sesudahnya. -->
+								{@const pairs = selectedPhotos.map((p, i) => ({ p, i }))}
+								{#each [{ label: 'Baris atas', rows: pairs.filter((x) => x.i % 2 === 0) }, { label: 'Baris bawah', rows: pairs.filter((x) => x.i % 2 === 1) }] as g (g.label)}
+									<p class="mb-2 mt-4 font-mono text-[10px] uppercase tracking-[0.16em] text-ash first:mt-0">
+										{g.label} · {g.rows.length}
+									</p>
+									{#if g.rows.length === 0}
+										<p class="rounded-[3px] border border-dashed border-ink/15 px-4 py-4 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2">
+											Kosong
+										</p>
+									{:else}
+										<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+											{#each g.rows as { p, i }, ri (p.id)}
+												<li class="group relative overflow-hidden rounded-[3px] border border-ink/15 bg-card">
+													<img src={p.thumbUrl || ''} alt={p.title || ''} class="aspect-[4/3] w-full object-cover" />
+													<div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
+														<p class="truncate text-[11px] text-white/90">{p.title || 'Tanpa judul'}</p>
+													</div>
+													<span class="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-safelight font-mono text-[10px] text-white">
+														{i + 1}
+													</span>
+													<div class="absolute right-1.5 top-1.5 flex gap-1">
+														<button
+															type="button"
+															onclick={() => movePhotoRow(s.key, p.id, -1)}
+															disabled={ri === 0}
+															class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 disabled:opacity-30"
+															title="Geser kiri dalam baris"
+														>↑</button>
+														<button
+															type="button"
+															onclick={() => movePhotoRow(s.key, p.id, 1)}
+															disabled={ri === g.rows.length - 1}
+															class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 disabled:opacity-30"
+															title="Geser kanan dalam baris"
+														>↓</button>
+														<button
+															type="button"
+															onclick={() => togglePhoto(s.key, s, p.id)}
+															class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 hover:bg-safelight"
+															title="Hapus"
+														>✕</button>
+													</div>
+												</li>
+											{/each}
+										</ul>
+									{/if}
+								{/each}
 							{:else}
 								<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
 									{#each selectedPhotos as p, i (p.id)}

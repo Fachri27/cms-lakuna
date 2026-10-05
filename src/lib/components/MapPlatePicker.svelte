@@ -128,14 +128,14 @@
 		const ids = [...strayIds, ...groups.flatMap((g) => chosen[g.key] ?? [])];
 		const value = JSON.stringify(ids);
 		if (value.length > MAX_VALUE) {
-			error = `Terlalu banyak pilihan (${ids.length} foto). Kurangi pilihan di beberapa lokasi.`;
+			error = `Terlalu banyak pilihan (${ids.length} foto). Kurangi pilihan di beberapa lokasi`;
 			return;
 		}
 		saving = true;
 		try {
 			await api(`/settings/${SETTING}`, { method: 'PUT', body: JSON.stringify({ value }) });
 			saved = JSON.parse(JSON.stringify(chosen));
-			notice = 'Tersimpan. Peta di beranda memakai pilihan ini.';
+			notice = 'Tersimpan. Peta di beranda memakai pilihan ini';
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Gagal menyimpan';
 		} finally {

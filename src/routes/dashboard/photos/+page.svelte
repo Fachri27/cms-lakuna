@@ -99,7 +99,7 @@
 </script>
 
 <div class="rise">
-	<SectionHeader index="01" kicker="Studio" title="Foto" class="mb-8">
+	<SectionHeader index="01" kicker="Studio" title="Foto / Video" class="mb-8">
 		<a href="/dashboard/photos/create"><Btn variant="primary">+ Upload</Btn></a>
 	</SectionHeader>
 

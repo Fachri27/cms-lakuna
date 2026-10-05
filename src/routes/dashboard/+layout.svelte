@@ -24,7 +24,7 @@
 			items: [
 				{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
 				{ label: 'Beranda', href: '/dashboard/homepage', icon: LayoutTemplate },
-				{ label: 'Foto', href: '/dashboard/photos', icon: Image },
+				{ label: 'Foto / Video', href: '/dashboard/photos', icon: Image },
 				{ label: 'Persetujuan', href: '/dashboard/approval', icon: ClipboardCheck }
 			]
 		},
@@ -33,7 +33,7 @@
 			items: [
 				{ label: 'Kategori', href: '/dashboard/categories', icon: Tag },
 				{ label: 'Kata Kunci', href: '/dashboard/keywords', icon: Hash },
-				{ label: 'Fotografer', href: '/dashboard/photographers', icon: User }
+				{ label: 'Fotografer / Videografer', href: '/dashboard/photographers', icon: User }
 			]
 		},
 		{
