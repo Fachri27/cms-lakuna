@@ -2,10 +2,8 @@
 	import { onMount } from 'svelte';
 	import { api, apiEnvelope, ApiError } from '$lib/api';
 	import { inputCls, cn } from '$lib/ui-classes';
-	import Panel from '$lib/components/Panel.svelte';
-	import SectionHeader from '$lib/components/SectionHeader.svelte';
+	import Kicker from '$lib/components/Kicker.svelte';
 	import Btn from '$lib/components/Btn.svelte';
-	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 
@@ -132,20 +130,26 @@
 	}
 </script>
 
-<div class="rise">
-	<SectionHeader index="02" kicker="Katalog" title="Foto penanda peta" class="mb-3" />
-	<p class="mb-8 max-w-2xl text-sm text-ash">
-		Tiap lokasi di peta beranda menampilkan satu foto di penandanya. Secara bawaan foto pertama di
-		lokasi itu; klik foto lain untuk menggantinya, klik lagi untuk kembali ke bawaan. Hanya lokasi yang
-		dikenali peta yang muncul sebagai titik.
-	</p>
+<!-- Bagian halaman Beranda (dashboard/homepage): foto penanda tiap lokasi di peta Nusantara. -->
+<div class="border hairline border-solid rounded-[3px] bg-card-2 p-6">
+	<div class="flex items-baseline justify-between gap-4">
+		<div>
+			<Kicker tone="safelight">04 · Foto penanda peta</Kicker>
+			<p class="mt-1 text-xs text-ash">
+				Foto yang tampil di penanda tiap lokasi pada peta Nusantara (dan pertama dibuka saat diklik).
+				Bawaan: foto pertama di lokasi itu. Klik foto lain untuk menggantinya, klik lagi untuk kembali
+				ke bawaan. Hanya lokasi yang dikenali peta yang muncul sebagai titik.
+			</p>
+			<p class="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ash-2">
+				Tampil di landing: Peta Nusantara (penanda)
+			</p>
+		</div>
+	</div>
 
 	{#if fetching}
-		<Panel class="p-7 space-y-4">
-			<Skeleton class="h-10" /><Skeleton class="h-24" /><Skeleton class="h-24" />
-		</Panel>
+		<div class="mt-6 flex items-center gap-2 text-ash"><Spinner /> <span class="text-xs">Memuat…</span></div>
 	{:else}
-		<div class="mb-5 flex flex-wrap items-center gap-3">
+		<div class="mt-6 mb-5 flex flex-wrap items-center gap-3">
 			<input
 				bind:value={search}
 				placeholder="Cari lokasi…"
@@ -155,7 +159,7 @@
 			<span class="font-mono text-[11px] text-ash-2">{visible.length} lokasi</span>
 			<div class="ml-auto flex items-center gap-3">
 				{#if dirty}<span class="font-mono text-[11px] text-safelight-dim">Belum disimpan</span>{/if}
-				<Btn variant="primary" disabled={saving || !dirty} onclick={save}>
+				<Btn type="button" variant="primary" disabled={saving || !dirty} onclick={save}>
 					{#if saving}<Spinner />Menyimpan{:else}Simpan{/if}
 				</Btn>
 			</div>
@@ -164,14 +168,16 @@
 		{#if notice}<p class="mb-4 text-xs font-mono text-ash">{notice}</p>{/if}
 
 		{#if groups.length === 0}
-			<EmptyState>Belum ada foto berlokasi — isi kolom Lokasi saat mengunggah foto</EmptyState>
+			<p class="rounded-[3px] border border-dashed border-ink/15 px-4 py-6 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2">
+				Belum ada foto berlokasi — isi kolom Lokasi saat mengunggah foto
+			</p>
 		{:else}
-			<div class="space-y-4">
+			<div class="space-y-3">
 				{#each visible as g (g.key)}
 					{@const current = chosen[g.key] ?? g.photos[0]?.id}
-					<Panel class="p-5">
+					<div class="rounded-[3px] border hairline border-solid bg-paper p-4">
 						<div class="mb-3 flex items-baseline justify-between gap-4">
-							<h2 class="font-display text-xl">{g.name}</h2>
+							<h3 class="font-display text-lg">{g.name}</h3>
 							<span class="font-mono text-[11px] text-ash-2">
 								{g.photos.length} foto{chosen[g.key] ? ' · dipilih manual' : ' · bawaan'}
 							</span>
@@ -203,7 +209,7 @@
 								</button>
 							{/each}
 						</div>
-					</Panel>
+					</div>
 				{/each}
 			</div>
 		{/if}

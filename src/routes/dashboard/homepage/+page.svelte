@@ -8,6 +8,7 @@
 	import Field from '$lib/components/Field.svelte';
 	import Btn from '$lib/components/Btn.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import MapPlatePicker from '$lib/components/MapPlatePicker.svelte';
 
 	interface TextSectionDef {
 		key: string;
@@ -642,5 +643,8 @@
 				{/if}
 			</div>
 		{/each}
+
+		<!-- 04 · Foto penanda tiap lokasi di peta Nusantara (pilihan disimpan di pengaturan map_plate_photos). -->
+		<MapPlatePicker />
 	</div>
 </div>

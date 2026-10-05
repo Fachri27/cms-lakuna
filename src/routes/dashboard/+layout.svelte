@@ -15,7 +15,6 @@
 		CalendarClock,
 		Settings,
 		FileText,
-		MapPin,
 		LogOut
 	} from '@lucide/svelte';
 
@@ -34,8 +33,7 @@
 			items: [
 				{ label: 'Kategori', href: '/dashboard/categories', icon: Tag },
 				{ label: 'Kata Kunci', href: '/dashboard/keywords', icon: Hash },
-				{ label: 'Fotografer', href: '/dashboard/photographers', icon: User },
-				{ label: 'Peta', href: '/dashboard/map', icon: MapPin }
+				{ label: 'Fotografer', href: '/dashboard/photographers', icon: User }
 			]
 		},
 		{
