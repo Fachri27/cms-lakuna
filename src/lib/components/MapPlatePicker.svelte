@@ -2,15 +2,15 @@
 	import { onMount } from 'svelte';
 	import { api, apiEnvelope, ApiError } from '$lib/api';
 	import { inputCls, cn } from '$lib/ui-classes';
-	import Kicker from '$lib/components/Kicker.svelte';
 	import Btn from '$lib/components/Btn.svelte';
-	import Skeleton from '$lib/components/Skeleton.svelte';
+	import Kicker from '$lib/components/Kicker.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 
 	/**
-	 * Foto penanda peta beranda: tiap lokasi punya satu foto yang tampil di penandanya (dan pertama
-	 * dibuka). Bawaan = foto pertama lokasi itu; di sini admin bisa memilih yang lain. Pilihan
-	 * disimpan sebagai daftar id foto di pengaturan `map_plate_photos`.
+	 * Foto yang tampil di titik peta beranda. Per lokasi admin memilih beberapa foto (mis. 5 dari
+	 * 100); hanya foto itu yang tampil di titiknya, berurutan, dan nomor 1 jadi penanda. Lokasi yang
+	 * belum dipilih tetap menampilkan semua fotonya. Disimpan sebagai daftar id foto berurutan di
+	 * pengaturan `map_plate_photos`.
 	 */
 	interface MapPhoto {
 		id: string;
@@ -25,7 +25,8 @@
 	}
 
 	const SETTING = 'map_plate_photos';
-	const MAX_VALUE = 5000; // batas panjang nilai pengaturan di API
+	const MAX_VALUE = 60000; // batas panjang nilai pengaturan di API
+	const FILTER_FROM = 12; // pencarian judul muncul bila foto di satu lokasi lebih banyak dari ini
 
 	let fetching = $state(true);
 	let saving = $state(false);
@@ -33,9 +34,11 @@
 	let notice = $state('');
 	let search = $state('');
 	let groups = $state<Group[]>([]);
-	/** id foto terpilih per kunci lokasi; tak ada = bawaan (foto pertama). */
-	let chosen = $state<Record<string, string>>({});
-	let saved = $state<Record<string, string>>({});
+	/** id foto terpilih per kunci lokasi, berurutan; tak ada = belum memilih (semua foto tampil). */
+	let chosen = $state<Record<string, string[]>>({});
+	let saved = $state<Record<string, string[]>>({});
+	/** Pencarian judul per lokasi (hanya lokasi berfoto banyak). */
+	let groupFilter = $state<Record<string, string>>({});
 	/** id di pengaturan yang tidak termasuk lokasi mana pun di daftar (dipertahankan saat menyimpan). */
 	let strayIds = $state<string[]>([]);
 
@@ -44,10 +47,11 @@
 	const visible = $derived(
 		groups.filter((g) => !search.trim() || g.name.toLowerCase().includes(search.trim().toLowerCase()))
 	);
+	const totalChosen = $derived(Object.values(chosen).reduce((n, l) => n + l.length, 0));
 
 	async function loadPhotos(): Promise<MapPhoto[]> {
 		const all: MapPhoto[] = [];
-		for (let page = 1; page <= 20; page++) {
+		for (let page = 1; page <= 50; page++) {
 			const q = new URLSearchParams({ type: 'FOTO', limit: '100', page: String(page) });
 			const res = await apiEnvelope<MapPhoto[]>(`/photos?${q.toString()}`);
 			all.push(...(res.data ?? []));
@@ -80,18 +84,17 @@
 			} catch {
 				/* pengaturan rusak → anggap kosong */
 			}
-			const next: Record<string, string> = {};
-			const used = new Set<string>();
-			for (const id of ids) {
-				const g = groups.find((x) => x.photos.some((p) => p.id === id));
-				if (g && !next[g.key]) {
-					next[g.key] = id;
-					used.add(id);
-				}
+			const next: Record<string, string[]> = {};
+			const inGroup = new Set<string>();
+			for (const g of groups) {
+				const mine = new Set(g.photos.map((p) => p.id));
+				const list = ids.filter((id) => mine.has(id));
+				if (list.length) next[g.key] = list;
+				for (const id of mine) inGroup.add(id);
 			}
 			chosen = next;
-			saved = { ...next };
-			strayIds = ids.filter((id) => !used.has(id) && !groups.some((g) => g.photos.some((p) => p.id === id)));
+			saved = JSON.parse(JSON.stringify(next));
+			strayIds = ids.filter((id) => !inGroup.has(id));
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Gagal memuat foto';
 		} finally {
@@ -99,28 +102,39 @@
 		}
 	});
 
-	function pick(g: Group, id: string) {
+	function setList(g: Group, list: string[]) {
 		notice = '';
 		const next = { ...chosen };
-		// Klik foto yang sudah terpilih = kembali ke bawaan.
-		if (next[g.key] === id) delete next[g.key];
-		else next[g.key] = id;
+		if (list.length) next[g.key] = list;
+		else delete next[g.key];
 		chosen = next;
+	}
+
+	/** Pilih / batalkan satu foto; yang baru dipilih masuk di urutan terakhir. */
+	function toggle(g: Group, id: string) {
+		const cur = chosen[g.key] ?? [];
+		setList(g, cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
+	}
+
+	/** Jadikan foto ini nomor 1 (penanda). */
+	function makeFirst(g: Group, id: string) {
+		const cur = chosen[g.key] ?? [];
+		setList(g, [id, ...cur.filter((x) => x !== id)]);
 	}
 
 	async function save() {
 		error = '';
 		notice = '';
-		const ids = [...strayIds, ...groups.map((g) => chosen[g.key]).filter((x): x is string => !!x)];
+		const ids = [...strayIds, ...groups.flatMap((g) => chosen[g.key] ?? [])];
 		const value = JSON.stringify(ids);
 		if (value.length > MAX_VALUE) {
-			error = `Terlalu banyak pilihan (${ids.length} foto). Kembalikan beberapa lokasi ke bawaan.`;
+			error = `Terlalu banyak pilihan (${ids.length} foto). Kurangi pilihan di beberapa lokasi.`;
 			return;
 		}
 		saving = true;
 		try {
 			await api(`/settings/${SETTING}`, { method: 'PUT', body: JSON.stringify({ value }) });
-			saved = { ...chosen };
+			saved = JSON.parse(JSON.stringify(chosen));
 			notice = 'Tersimpan. Peta di beranda memakai pilihan ini.';
 		} catch (err) {
 			error = err instanceof ApiError ? err.message : 'Gagal menyimpan';
@@ -128,20 +142,26 @@
 			saving = false;
 		}
 	}
+
+	function shown(g: Group): MapPhoto[] {
+		const f = (groupFilter[g.key] ?? '').trim().toLowerCase();
+		return f ? g.photos.filter((p) => p.title.toLowerCase().includes(f)) : g.photos;
+	}
 </script>
 
-<!-- Bagian halaman Beranda (dashboard/homepage): foto penanda tiap lokasi di peta Nusantara. -->
+<!-- Bagian halaman Beranda (dashboard/homepage): foto yang tampil di tiap titik peta Nusantara. -->
 <div class="border hairline border-solid rounded-[3px] bg-card-2 p-6">
 	<div class="flex items-baseline justify-between gap-4">
 		<div>
-			<Kicker tone="safelight">04 · Foto penanda peta</Kicker>
+			<Kicker tone="safelight">04 · Foto di peta</Kicker>
 			<p class="mt-1 text-xs text-ash">
-				Foto yang tampil di penanda tiap lokasi pada peta Nusantara (dan pertama dibuka saat diklik).
-				Bawaan: foto pertama di lokasi itu. Klik foto lain untuk menggantinya, klik lagi untuk kembali
-				ke bawaan. Hanya lokasi yang dikenali peta yang muncul sebagai titik.
+				Pilih foto yang tampil di titik tiap lokasi pada peta Nusantara. Klik foto untuk memilih atau
+				membatalkan; nomor menunjukkan urutan dan <strong>nomor 1 jadi penanda</strong> di peta. Lokasi
+				yang belum dipilih menampilkan semua fotonya. Hanya lokasi yang dikenali peta yang muncul sebagai
+				titik.
 			</p>
 			<p class="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ash-2">
-				Tampil di landing: Peta Nusantara (penanda)
+				Tampil di landing: Peta Nusantara (titik &amp; galerinya)
 			</p>
 		</div>
 	</div>
@@ -156,7 +176,7 @@
 				aria-label="Cari lokasi"
 				class={cn(inputCls, 'max-w-xs')}
 			/>
-			<span class="font-mono text-[11px] text-ash-2">{visible.length} lokasi</span>
+			<span class="font-mono text-[11px] text-ash-2">{visible.length} lokasi · {totalChosen} foto dipilih</span>
 			<div class="ml-auto flex items-center gap-3">
 				{#if dirty}<span class="font-mono text-[11px] text-safelight-dim">Belum disimpan</span>{/if}
 				<Btn type="button" variant="primary" disabled={saving || !dirty} onclick={save}>
@@ -174,39 +194,79 @@
 		{:else}
 			<div class="space-y-3">
 				{#each visible as g (g.key)}
-					{@const current = chosen[g.key] ?? g.photos[0]?.id}
+					{@const sel = chosen[g.key] ?? []}
 					<div class="rounded-[3px] border hairline border-solid bg-paper p-4">
-						<div class="mb-3 flex items-baseline justify-between gap-4">
+						<div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
 							<h3 class="font-display text-lg">{g.name}</h3>
-							<span class="font-mono text-[11px] text-ash-2">
-								{g.photos.length} foto{chosen[g.key] ? ' · dipilih manual' : ' · bawaan'}
-							</span>
+							<div class="flex items-center gap-3">
+								<span class="font-mono text-[11px] text-ash-2">
+									{sel.length
+										? `${sel.length} dipilih dari ${g.photos.length}`
+										: `belum memilih · semua ${g.photos.length} foto tampil`}
+								</span>
+								{#if sel.length}
+									<button
+										type="button"
+										onclick={() => setList(g, [])}
+										class="font-mono text-[10px] uppercase tracking-[0.14em] text-ash-2 hover:text-safelight-dim"
+									>
+										Kosongkan
+									</button>
+								{/if}
+							</div>
 						</div>
-						<div class="flex flex-wrap gap-2.5" role="group" aria-label={`Foto penanda ${g.name}`}>
-							{#each g.photos as p (p.id)}
-								{@const on = current === p.id}
-								<button
-									type="button"
-									onclick={() => pick(g, p.id)}
-									aria-pressed={on}
-									title={p.title}
-									class={cn(
-										'relative h-[84px] w-[112px] overflow-hidden rounded-[3px] border bg-ink/[0.05] transition-all',
-										on
-											? 'border-safelight ring-2 ring-safelight/40'
-											: 'border-transparent opacity-70 hover:opacity-100 hover:border-ink/30'
-									)}
-								>
-									{#if p.thumbUrl}
-										<img src={p.thumbUrl} alt={p.title} loading="lazy" class="h-full w-full object-cover" />
-									{/if}
-									{#if on}
-										<span
-											class="absolute left-1 top-1 rounded-[2px] bg-safelight px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-paper"
-											>Penanda</span
+						{#if g.photos.length > FILTER_FROM}
+							<input
+								bind:value={groupFilter[g.key]}
+								placeholder={`Cari judul di ${g.name}…`}
+								aria-label={`Cari judul foto di ${g.name}`}
+								class={cn(inputCls, 'mb-3 max-w-xs py-1.5 text-xs')}
+							/>
+						{/if}
+						<div
+							class={cn('flex flex-wrap gap-2.5', g.photos.length > FILTER_FROM && 'max-h-[360px] overflow-y-auto pr-1')}
+							role="group"
+							aria-label={`Foto di titik ${g.name}`}
+						>
+							{#each shown(g) as p (p.id)}
+								{@const idx = sel.indexOf(p.id)}
+								{@const on = idx >= 0}
+								<div class="relative h-[78px] w-[104px] shrink-0">
+									<button
+										type="button"
+										onclick={() => toggle(g, p.id)}
+										aria-pressed={on}
+										title={p.title}
+										class={cn(
+											'absolute inset-0 overflow-hidden rounded-[3px] border bg-ink/[0.05] transition-all',
+											on
+												? 'border-safelight ring-2 ring-safelight/40'
+												: sel.length
+													? 'border-transparent opacity-50 hover:opacity-100 hover:border-ink/30'
+													: 'border-transparent hover:border-ink/30'
+										)}
+									>
+										{#if p.thumbUrl}
+											<img src={p.thumbUrl} alt={p.title} loading="lazy" class="h-full w-full object-cover" />
+										{/if}
+										{#if on}
+											<span
+												class="absolute left-1 top-1 rounded-[2px] bg-safelight px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.1em] text-paper"
+												>{idx === 0 ? '1 · Penanda' : idx + 1}</span
+											>
+										{/if}
+									</button>
+									{#if on && idx > 0}
+										<button
+											type="button"
+											onclick={() => makeFirst(g, p.id)}
+											aria-label={`Jadikan penanda: ${p.title}`}
+											title="Jadikan penanda (nomor 1)"
+											class="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-paper/90 text-[11px] leading-none text-ink shadow hover:bg-safelight hover:text-paper"
+											>★</button
 										>
 									{/if}
-								</button>
+								</div>
 							{/each}
 						</div>
 					</div>
