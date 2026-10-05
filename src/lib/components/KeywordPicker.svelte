@@ -11,6 +11,8 @@
 		invalid = false,
 		error = '',
 		min = 5,
+		lang = 'id',
+		label = 'Keyword',
 		onChange = () => {}
 	}: {
 		selected?: string[];
@@ -18,6 +20,9 @@
 		invalid?: boolean;
 		error?: string;
 		min?: number;
+		/** Bahasa kata kunci yang dikelola picker ini: daftar, pencarian, pembuatan, dan statistik per bahasa. */
+		lang?: 'id' | 'en';
+		label?: string;
 		onChange?: () => void;
 	} = $props();
 
@@ -48,7 +53,7 @@
 	let frequent = $derived.by(() => {
 		void statsTick;
 		const selectedNames = new Set(selected.map((id) => (names[id] ?? '').toLowerCase()));
-		return topFrequent(8).filter(
+		return topFrequent(8, lang).filter(
 			(s) => !selected.includes(s.id) && !selectedNames.has(s.name.toLowerCase())
 		);
 	});
@@ -57,7 +62,7 @@
 		void statsTick;
 		const selectedNames = new Set(selected.map((id) => (names[id] ?? '').toLowerCase()));
 		const freqNames = new Set(frequent.map((s) => s.name.toLowerCase()));
-		return recentUsed(8).filter(
+		return recentUsed(8, lang).filter(
 			(s) =>
 				!selected.includes(s.id) &&
 				!selectedNames.has(s.name.toLowerCase()) &&
@@ -65,7 +70,9 @@
 		);
 	});
 
-	let hint = $derived(error || (invalid ? `Keyword minimal ${min} (sekarang ${selected.length})` : ''));
+	let hint = $derived(
+		error || (invalid && min > 0 ? `${label} minimal ${min} (sekarang ${selected.length})` : '')
+	);
 
 	onMount(() => {
 		void fetchNames();
@@ -83,7 +90,7 @@
 
 	async function fetchNames() {
 		try {
-			const all = await api<Keyword[]>('/keywords?limit=200');
+			const all = await api<Keyword[]>(`/keywords?limit=100&lang=${lang}`);
 			if (!all) return;
 			const next = { ...names };
 			const idByName: Record<string, string> = {};
@@ -93,7 +100,7 @@
 				idByName[k.name.toLowerCase()] = k.id;
 			}
 			names = next;
-			syncStatIds(idByName);
+			syncStatIds(idByName, lang);
 			statsTick++;
 		} catch {
 			/* nama keyword tetap tampil sebagai id */
@@ -112,7 +119,7 @@
 		timer = setTimeout(async () => {
 			loading = true;
 			try {
-				const q = new URLSearchParams({ search: value.trim(), limit: '20' });
+				const q = new URLSearchParams({ search: value.trim(), limit: '20', lang });
 				const res = await api<Keyword[]>(`/keywords?${q.toString()}`);
 				const lower = value.trim().toLowerCase();
 				suggestions = (res ?? []).filter(
@@ -137,7 +144,7 @@
 		query = '';
 		suggestions = [];
 		open = false;
-		recordUsage(id, name);
+		recordUsage(id, name, lang);
 		statsTick++;
 		onChange();
 	}
@@ -149,7 +156,7 @@
 		try {
 			const created = await api<Keyword>('/keywords', {
 				method: 'POST',
-				body: JSON.stringify({ name })
+				body: JSON.stringify({ name, lang })
 			});
 			await addKeywordById(created.id, created.name);
 			kwError = null;
@@ -175,7 +182,7 @@
 		}
 		loading = true;
 		try {
-			const q = new URLSearchParams({ search: name, limit: '5' });
+			const q = new URLSearchParams({ search: name, limit: '5', lang });
 			const res = await api<Keyword[]>(`/keywords?${q.toString()}`);
 			const next = { ...names };
 			for (const k of res ?? []) next[k.id] = k.name;
@@ -201,7 +208,10 @@
 
 <div class="relative" bind:this={box}>
 	<span class={labelCls}>
-		Keyword <span class="text-ash-2 normal-case tracking-normal">(minimal {min})</span>
+		{label}
+		<span class="text-ash-2 normal-case tracking-normal"
+			>{min > 0 ? `(minimal ${min})` : '(opsional)'}</span
+		>
 	</span>
 	{#if frequent.length > 0}
 		<div class="mb-2 flex flex-wrap items-center gap-1.5">
@@ -262,7 +272,11 @@
 			onkeydown={(e) => {
 				if (e.key === 'Escape') open = false;
 			}}
-			placeholder={selected.length === 0 ? 'Cari atau buat keyword…' : ''}
+			placeholder={selected.length === 0
+				? lang === 'en'
+					? 'Search or create an English keyword…'
+					: 'Cari atau buat keyword…'
+				: ''}
 			class="flex-1 min-w-[120px] outline-none text-sm bg-transparent text-ink placeholder:text-ash-2"
 		/>
 		{#if loading}<Spinner />{/if}

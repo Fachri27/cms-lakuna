@@ -24,9 +24,11 @@
 	let errors = $state<Record<string, string>>({});
 	let form = $state({
 		title: '',
+		titleEn: '',
 		photographer: '',
 		price: '',
 		description: '',
+		descriptionEn: '',
 		type: 'FOTO'
 	});
 	let file = $state<File | null>(null);
@@ -75,6 +77,8 @@
 			formData.append('price', form.price);
 			formData.append('type', form.type);
 			if (form.description) formData.append('description', form.description);
+			if (form.titleEn.trim()) formData.append('titleEn', form.titleEn.trim());
+			if (form.descriptionEn.trim()) formData.append('descriptionEn', form.descriptionEn.trim());
 			formData.append('photo', file as File);
 			const res = await apiFetch('/photos', { method: 'POST', body: formData });
 			const json = await res.json().catch(() => null);
@@ -180,7 +184,7 @@
 				</Field>
 
 				<div class="grid gap-5 sm:grid-cols-2">
-				<Field label="Judul">
+				<Field label="Judul (ID)">
 					<input
 						name="title"
 						value={form.title}
@@ -195,6 +199,23 @@
 					{#if errors.title}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.title}</p>{/if}
 				</Field>
 
+				<Field label="Title (EN) · opsional">
+					<input
+						name="titleEn"
+						value={form.titleEn}
+						oninput={handleChange}
+						maxlength={100}
+						class={inputCls}
+						placeholder="English title"
+					/>
+					<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
+						{form.titleEn.length}/100
+					</span>
+					{#if errors.titleEn}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.titleEn}</p>{/if}
+				</Field>
+				</div>
+
+				<div class="grid gap-5 sm:grid-cols-2">
 				<Field label="Fotografer">
 					<input
 						name="photographer"
@@ -207,8 +228,6 @@
 					/>
 					{#if errors.photographer}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.photographer}</p>{/if}
 				</Field>
-				</div>
-
 				<Field label="Harga">
 					<input
 						name="price"
@@ -242,8 +261,10 @@
 					{/if}
 					{#if errors.price}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.price}</p>{/if}
 				</Field>
+				</div>
 
-				<Field label="Deskripsi">
+				<div class="grid gap-5 sm:grid-cols-2">
+				<Field label="Deskripsi (ID) · opsional">
 					<textarea
 						name="description"
 						value={form.description}
@@ -256,8 +277,23 @@
 					<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
 						{form.description.length}/500
 					</span>
-					<span class="mt-1 block font-mono text-[10px] text-ash-2">(opsional)</span>
 				</Field>
+
+				<Field label="Description (EN) · opsional">
+					<textarea
+						name="descriptionEn"
+						value={form.descriptionEn}
+						oninput={handleChange}
+						maxlength={500}
+						rows={4}
+						class={cn(inputCls, 'resize-none')}
+						placeholder="English description…"
+					></textarea>
+					<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
+						{form.descriptionEn.length}/500
+					</span>
+				</Field>
+				</div>
 
 				<Btn type="submit" variant="primary" disabled={loading} class="w-full">
 					{#if loading}<Spinner />Mengupload{:else}Upload{/if}

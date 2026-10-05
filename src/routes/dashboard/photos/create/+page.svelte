@@ -11,6 +11,7 @@
 	import Spinner from '$lib/components/Spinner.svelte';
 	import CategorySearch from '$lib/components/CategorySearch.svelte';
 	import KeywordPicker from '$lib/components/KeywordPicker.svelte';
+	import LocationPicker from '$lib/components/LocationPicker.svelte';
 
 	interface Category {
 		id: string;
@@ -31,10 +32,12 @@
 	let errors = $state<Record<string, string>>({});
 	let form = $state({
 		title: '',
+		titleEn: '',
 		photographer: '',
 		location: '',
 		price: '',
 		description: '',
+		descriptionEn: '',
 		type: 'FOTO'
 	});
 	let file = $state<File | null>(null);
@@ -44,6 +47,7 @@
 	let categories = $state<Category[]>([]);
 	let selectedCategories = $state<string[]>([]);
 	let selectedKeywords = $state<string[]>([]);
+	let selectedKeywordsEn = $state<string[]>([]);
 
 	let pricePresets = $state<number[]>([]);
 	let photographers = $state<Photographer[]>([]);
@@ -119,6 +123,8 @@
 			fd.append('price', form.price);
 			fd.append('type', form.type);
 			if (form.description.trim()) fd.append('description', form.description.trim());
+			if (form.titleEn.trim()) fd.append('titleEn', form.titleEn.trim());
+			if (form.descriptionEn.trim()) fd.append('descriptionEn', form.descriptionEn.trim());
 			if (form.location.trim()) fd.append('location', form.location.trim());
 			fd.append('photo', file as File);
 
@@ -144,10 +150,11 @@
 					body: JSON.stringify({ categoryIds: selectedCategories })
 				});
 			}
-			if (selectedKeywords.length > 0) {
+			const keywordIds = [...new Set([...selectedKeywords, ...selectedKeywordsEn])];
+			if (keywordIds.length > 0) {
 				await api(`/photos/${photoId}/keywords`, {
 					method: 'POST',
-					body: JSON.stringify({ keywordIds: selectedKeywords })
+					body: JSON.stringify({ keywordIds })
 				});
 			}
 			await goto('/dashboard/photos');
@@ -223,7 +230,7 @@
 			</div>
 
 			<div class="grid gap-5 sm:grid-cols-2">
-			<Field label="Judul">
+			<Field label="Judul (ID)">
 				<input
 					name="title"
 					bind:value={form.title}
@@ -238,6 +245,22 @@
 				{#if errors.title}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.title}</p>{/if}
 			</Field>
 
+			<Field label="Title (EN) · opsional">
+				<input
+					name="titleEn"
+					bind:value={form.titleEn}
+					maxlength={100}
+					class={inputCls}
+					placeholder="English title"
+				/>
+				<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
+					{form.titleEn.length}/100
+				</span>
+				{#if errors.titleEn}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.titleEn}</p>{/if}
+			</Field>
+			</div>
+
+			<div class="grid gap-5 sm:grid-cols-2">
 			<Field label="Fotografer">
 				<select
 					name="photographer"
@@ -251,18 +274,6 @@
 					{/each}
 				</select>
 				{#if errors.photographer}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.photographer}</p>{/if}
-			</Field>
-			</div>
-
-			<div class="grid gap-5 sm:grid-cols-2">
-			<Field label="Lokasi (opsional)">
-				<input
-					name="location"
-					bind:value={form.location}
-					maxlength={200}
-					class={inputCls}
-					placeholder="Contoh: Bromo, Jawa Timur"
-				/>
 			</Field>
 
 			<Field label="Harga">
@@ -300,7 +311,12 @@
 			</Field>
 			</div>
 
-			<Field label="Deskripsi (opsional)">
+			<Field label="Lokasi (opsional)">
+				<LocationPicker bind:value={form.location} />
+			</Field>
+
+			<div class="grid gap-5 sm:grid-cols-2">
+			<Field label="Deskripsi (ID) · opsional">
 				<textarea
 					name="description"
 					bind:value={form.description}
@@ -314,7 +330,21 @@
 				</span>
 			</Field>
 
-			<div class="grid gap-5 sm:grid-cols-2">
+			<Field label="Description (EN) · opsional">
+				<textarea
+					name="descriptionEn"
+					bind:value={form.descriptionEn}
+					maxlength={500}
+					rows={4}
+					class={cn(inputCls, 'resize-none')}
+					placeholder="English description…"
+				></textarea>
+				<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
+					{form.descriptionEn.length}/500
+				</span>
+			</Field>
+			</div>
+
 			<div>
 				<span class={labelCls}>Category <span class="text-ash-2 normal-case tracking-normal">(minimal 5)</span></span>
 				<CategorySearch
@@ -326,12 +356,23 @@
 				/>
 			</div>
 
+			<div class="grid gap-5 sm:grid-cols-2">
 			<KeywordPicker
 				bind:selected={selectedKeywords}
 				bind:names={kwNames}
+				lang="id"
+				label="Keyword (ID)"
 				invalid={kwInvalid}
 				error={errors.keywords ?? ''}
 				onChange={() => clearError('keywords')}
+			/>
+
+			<KeywordPicker
+				bind:selected={selectedKeywordsEn}
+				bind:names={kwNames}
+				lang="en"
+				label="Keyword (EN)"
+				min={0}
 			/>
 			</div>
 

@@ -13,6 +13,7 @@
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import CategorySearch from '$lib/components/CategorySearch.svelte';
 	import KeywordPicker from '$lib/components/KeywordPicker.svelte';
+	import LocationPicker from '$lib/components/LocationPicker.svelte';
 
 	interface Category {
 		id: string;
@@ -22,6 +23,7 @@
 	interface Keyword {
 		id: string;
 		name: string;
+		lang?: 'id' | 'en';
 	}
 
 	interface Photographer {
@@ -32,14 +34,16 @@
 	interface PhotoDetail {
 		id: string;
 		title: string;
+		titleEn?: string | null;
 		description?: string;
+		descriptionEn?: string | null;
 		photographer: string;
 		location?: string;
 		price: number;
 		thumbUrl: string;
 		type: 'FOTO' | 'VIDEO';
 		photoCategories?: Array<{ category: { id: string; name: string } }>;
-		photoKeywords?: Array<{ keyword: { id: string; name: string } }>;
+		photoKeywords?: Array<{ keyword: { id: string; name: string; lang?: 'id' | 'en' } }>;
 	}
 
 	const id = page.params.id;
@@ -49,10 +53,12 @@
 	let errors = $state<Record<string, string>>({});
 	let form = $state({
 		title: '',
+		titleEn: '',
 		photographer: '',
 		location: '',
 		price: '',
 		description: '',
+		descriptionEn: '',
 		type: 'FOTO'
 	});
 	let file = $state<File | null>(null);
@@ -62,6 +68,7 @@
 	let categories = $state<Category[]>([]);
 	let selectedCategories = $state<string[]>([]);
 	let selectedKeywords = $state<string[]>([]);
+	let selectedKeywordsEn = $state<string[]>([]);
 
 	let pricePresets = $state<number[]>([]);
 	let photographers = $state<Photographer[]>([]);
@@ -94,7 +101,7 @@
 			pricePresets = [];
 		}
 		try {
-			const all = await api<Keyword[]>('/keywords?limit=200');
+			const all = await api<Keyword[]>('/keywords?limit=100');
 			for (const k of all ?? []) kwNames[k.id] = k.name;
 		} catch {
 			/* abaikan */
@@ -103,10 +110,12 @@
 			const photo = await api<PhotoDetail>(`/photos/${id}`);
 			form = {
 				title: photo.title ?? '',
+				titleEn: photo.titleEn ?? '',
 				photographer: photo.photographer ?? '',
 				location: photo.location ?? '',
 				price: String(photo.price ?? ''),
 				description: photo.description ?? '',
+				descriptionEn: photo.descriptionEn ?? '',
 				type: photo.type ?? 'FOTO'
 			};
 			preview = photo.thumbUrl ?? null;
@@ -115,9 +124,11 @@
 				(cid): cid is string => !!cid
 			);
 			const kwPairs = (photo.photoKeywords?.map((pk) => pk.keyword) ?? []).filter(
-				(k): k is { id: string; name: string } => !!k?.id
+				(k): k is { id: string; name: string; lang?: 'id' | 'en' } => !!k?.id
 			);
-			selectedKeywords = kwPairs.map((k) => k.id);
+			// Keyword lama tanpa lang = Indonesia.
+			selectedKeywords = kwPairs.filter((k) => k.lang !== 'en').map((k) => k.id);
+			selectedKeywordsEn = kwPairs.filter((k) => k.lang === 'en').map((k) => k.id);
 			for (const k of kwPairs) kwNames[k.id] = k.name;
 			for (const pc of photo.photoCategories ?? []) {
 				if (pc.category?.id && pc.category?.name)
@@ -169,6 +180,8 @@
 			fd.append('type', form.type);
 			// Selalu dikirim, termasuk string kosong, supaya field bisa dikosongkan.
 			fd.append('description', form.description.trim());
+			fd.append('titleEn', form.titleEn.trim());
+			fd.append('descriptionEn', form.descriptionEn.trim());
 			fd.append('location', form.location.trim());
 			if (file) fd.append('photo', file);
 
@@ -207,12 +220,14 @@
 			const existingKwIds = (current.photoKeywords?.map((pk) => pk.keyword?.id) ?? []).filter(
 				(kid): kid is string => !!kid
 			);
+			// Keyword ID + EN disinkronkan sebagai satu himpunan terhadap keadaan server.
+			const wantedKwIds = [...new Set([...selectedKeywords, ...selectedKeywordsEn])];
 			for (const kid of existingKwIds) {
-				if (!selectedKeywords.includes(kid)) {
+				if (!wantedKwIds.includes(kid)) {
 					await apiFetch(`/photos/${id}/keywords/${kid}`, { method: 'DELETE' });
 				}
 			}
-			const newKwIds = selectedKeywords.filter((kid) => !existingKwIds.includes(kid));
+			const newKwIds = wantedKwIds.filter((kid) => !existingKwIds.includes(kid));
 			if (newKwIds.length > 0) {
 				await api(`/photos/${id}/keywords`, {
 					method: 'POST',
@@ -289,7 +304,7 @@
 				</div>
 
 				<div class="grid gap-5 sm:grid-cols-2">
-				<Field label="Judul">
+				<Field label="Judul (ID)">
 					<input
 						name="title"
 						bind:value={form.title}
@@ -304,6 +319,22 @@
 					{#if errors.title}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.title}</p>{/if}
 				</Field>
 
+				<Field label="Title (EN) · opsional">
+					<input
+						name="titleEn"
+						bind:value={form.titleEn}
+						maxlength={100}
+						class={inputCls}
+						placeholder="English title"
+					/>
+					<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
+						{form.titleEn.length}/100
+					</span>
+					{#if errors.titleEn}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.titleEn}</p>{/if}
+				</Field>
+				</div>
+
+				<div class="grid gap-5 sm:grid-cols-2">
 				<Field label="Fotografer">
 					<select
 						name="photographer"
@@ -318,19 +349,6 @@
 					</select>
 					{#if errors.photographer}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.photographer}</p>{/if}
 				</Field>
-				</div>
-
-				<div class="grid gap-5 sm:grid-cols-2">
-				<Field label="Lokasi (opsional)">
-					<input
-						name="location"
-						bind:value={form.location}
-						maxlength={200}
-						class={inputCls}
-						placeholder="Contoh: Bromo, Jawa Timur"
-					/>
-				</Field>
-
 				<Field label="Harga">
 					<input
 						name="price"
@@ -366,7 +384,12 @@
 				</Field>
 				</div>
 
-				<Field label="Deskripsi (opsional)">
+				<Field label="Lokasi (opsional)">
+					<LocationPicker bind:value={form.location} />
+				</Field>
+
+				<div class="grid gap-5 sm:grid-cols-2">
+				<Field label="Deskripsi (ID) · opsional">
 					<textarea
 						name="description"
 						bind:value={form.description}
@@ -380,7 +403,21 @@
 					</span>
 				</Field>
 
-				<div class="grid gap-5 sm:grid-cols-2">
+				<Field label="Description (EN) · opsional">
+					<textarea
+						name="descriptionEn"
+						bind:value={form.descriptionEn}
+						maxlength={500}
+						rows={4}
+						class={cn(inputCls, 'resize-none')}
+						placeholder="English description…"
+					></textarea>
+					<span class="block text-right mt-1 font-mono text-[10px] text-ash-2 tnum">
+						{form.descriptionEn.length}/500
+					</span>
+				</Field>
+				</div>
+
 				<div>
 					<span class={labelCls}>Category <span class="text-ash-2 normal-case tracking-normal">(minimal 5)</span></span>
 					<CategorySearch
@@ -392,12 +429,23 @@
 					/>
 				</div>
 
+				<div class="grid gap-5 sm:grid-cols-2">
 				<KeywordPicker
 					bind:selected={selectedKeywords}
 					bind:names={kwNames}
+					lang="id"
+					label="Keyword (ID)"
 					invalid={kwInvalid}
 					error={errors.keywords ?? ''}
 					onChange={() => clearError('keywords')}
+				/>
+
+				<KeywordPicker
+					bind:selected={selectedKeywordsEn}
+					bind:names={kwNames}
+					lang="en"
+					label="Keyword (EN)"
+					min={0}
 				/>
 				</div>
 

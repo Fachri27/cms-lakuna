@@ -12,7 +12,9 @@
 	interface PendingPhoto {
 		id: string;
 		title: string;
+		titleEn?: string | null;
 		description?: string | null;
+		descriptionEn?: string | null;
 		photographer?: string | null;
 		location?: string | null;
 		width?: number | null;
@@ -441,6 +443,12 @@
 					<div><dt class={LBL}>Tanggal</dt><dd class="mt-0.5">{fmtDate(d.createdAt)}</dd></div>
 					<div><dt class={LBL}>Lokasi</dt><dd class="mt-0.5">{d.location || '—'}</dd></div>
 					<div class="sm:col-span-2"><dt class={LBL}>Deskripsi</dt><dd class="mt-0.5 text-ash">{d.description || '—'}</dd></div>
+					{#if d.titleEn}
+						<div class="sm:col-span-2"><dt class={LBL}>Title (EN)</dt><dd class="mt-0.5">{d.titleEn}</dd></div>
+					{/if}
+					{#if d.descriptionEn}
+						<div class="sm:col-span-2"><dt class={LBL}>Description (EN)</dt><dd class="mt-0.5 text-ash">{d.descriptionEn}</dd></div>
+					{/if}
 				</dl>
 
 				<div class="flex flex-wrap items-center justify-between gap-3 border-t hairline border-solid mt-6 px-7 py-5">
