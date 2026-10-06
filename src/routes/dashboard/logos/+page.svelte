@@ -28,6 +28,27 @@
 
 	let editingId = $state<string | null>(null);
 	let editName = $state('');
+	let editFile = $state<File | null>(null);
+	let editPreview = $state<string | null>(null);
+	let editSaving = $state(false);
+
+	function clearEditPreview() {
+		if (editPreview) URL.revokeObjectURL(editPreview);
+		editPreview = null;
+		editFile = null;
+	}
+
+	function onEditFile(e: Event) {
+		const f = (e.currentTarget as HTMLInputElement).files?.[0] ?? null;
+		clearEditPreview();
+		editFile = f;
+		editPreview = f ? URL.createObjectURL(f) : null;
+	}
+
+	function cancelEdit() {
+		clearEditPreview();
+		editingId = null;
+	}
 
 	async function errorMessage(res: Response): Promise<string> {
 		const j = (await res.json().catch(() => null)) as {
@@ -112,27 +133,32 @@
 	}
 
 	function startEdit(l: Logo) {
+		clearEditPreview();
 		editingId = l.id;
 		editName = l.name;
 	}
 
 	async function saveEdit(id: string) {
-		if (!editName.trim()) return;
+		if (!editName.trim() || editSaving) return;
+		editSaving = true;
 		try {
-			const res = await apiFetch(`/logos/${id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: editName.trim() })
-			});
+			// Multipart: nama selalu dikirim, gambar hanya bila dipilih (kosong = gambar lama dipertahankan).
+			const fd = new FormData();
+			fd.append('name', editName.trim());
+			if (editFile) fd.append('image', editFile);
+			const res = await apiFetch(`/logos/${id}`, { method: 'PATCH', body: fd });
 			if (!res.ok) {
 				alert(await errorMessage(res));
 				return;
 			}
+			clearEditPreview();
 			editingId = null;
 			await fetchLogos();
 		} catch (err) {
 			console.error(err);
-			alert('Gagal menyimpan nama');
+			alert('Gagal menyimpan logo');
+		} finally {
+			editSaving = false;
 		}
 	}
 
@@ -203,17 +229,34 @@
 			{#each logos as l, i (l.id)}
 				<li class="group relative overflow-hidden rounded-[3px] border border-ink/15 bg-card p-4">
 					<div class="grid h-20 place-items-center rounded bg-black/85 px-3">
-						{#if l.imageUrl}
+						{#if editingId === l.id && editPreview}
+							<img src={editPreview} alt="Gambar pengganti" class="max-h-14 w-auto max-w-full object-contain" />
+						{:else if l.imageUrl}
 							<img src={l.imageUrl} alt={l.name} class="max-h-14 w-auto max-w-full object-contain" />
 						{:else}
 							<span class="font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2">tanpa gambar</span>
 						{/if}
 					</div>
 					{#if editingId === l.id}
-						<div class="mt-3 flex gap-2">
-							<input bind:value={editName} maxlength={80} class={cn(inputCls, 'py-1.5 text-sm')} />
-							<Btn variant="primary" onclick={() => void saveEdit(l.id)}>OK</Btn>
-							<Btn onclick={() => (editingId = null)}>Batal</Btn>
+						<div class="mt-3 space-y-2">
+							<input bind:value={editName} maxlength={80} class={cn(inputCls, 'py-1.5 text-sm')} aria-label="Nama logo" />
+							<label class="block">
+								<span class="mb-1 block font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2">
+									Ganti gambar <span class="normal-case tracking-normal">(opsional)</span>
+								</span>
+								<input
+									type="file"
+									accept="image/jpeg,image/png,image/webp"
+									onchange={onEditFile}
+									class={cn(inputCls, 'py-1.5 text-xs')}
+								/>
+							</label>
+							<div class="flex gap-2">
+								<Btn variant="primary" disabled={editSaving} onclick={() => void saveEdit(l.id)}>
+									{#if editSaving}<Spinner />{:else}Simpan{/if}
+								</Btn>
+								<Btn onclick={cancelEdit}>Batal</Btn>
+							</div>
 						</div>
 					{:else}
 						<p class="mt-3 truncate text-sm font-medium">{l.name}</p>
@@ -237,7 +280,7 @@
 							type="button"
 							onclick={() => startEdit(l)}
 							class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 hover:bg-safelight"
-							title="Ubah nama"
+							title="Ubah nama / gambar"
 						>✎</button>
 						<button
 							type="button"
