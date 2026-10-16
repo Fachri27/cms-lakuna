@@ -13,7 +13,8 @@
 		min = 5,
 		lang = 'id',
 		label = 'Keyword',
-		onChange = () => {}
+		onChange = () => {},
+		action
 	}: {
 		selected?: string[];
 		names?: Record<string, string>;
@@ -24,6 +25,8 @@
 		lang?: 'id' | 'en';
 		label?: string;
 		onChange?: () => void;
+		/** Kontrol kecil di sisi kanan label (mis. tombol terjemahkan). */
+		action?: import('svelte').Snippet;
 	} = $props();
 
 	interface Keyword {
@@ -40,6 +43,11 @@
 	let box = $state<HTMLDivElement | null>(null);
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let statsTick = $state(0);
+	// `names` dipakai bersama picker ID & EN, jadi id dari peta itu belum tentu berbahasa picker ini.
+	// Pencocokan nama hanya boleh memakai id yang diketahui berbahasa `lang` — tanpa ini terjemahan
+	// "forest" di picker EN memakai keyword ID "forest", lalu saat disimpan (ID+EN digabung jadi satu
+	// himpunan) keyword EN-nya lenyap.
+	const ownIds = new Set<string>();
 
 	let exactMatch = $derived(
 		query
@@ -96,6 +104,7 @@
 			const idByName: Record<string, string> = {};
 			for (const k of all) {
 				next[k.id] = k.name;
+				ownIds.add(k.id);
 				idByName[k.name] = k.id;
 				idByName[k.name.toLowerCase()] = k.id;
 			}
@@ -126,7 +135,10 @@
 					(k) => k.name.toLowerCase().includes(lower) && !selected.includes(k.id)
 				);
 				const next = { ...names };
-				for (const k of res ?? []) next[k.id] = k.name;
+				for (const k of res ?? []) {
+					next[k.id] = k.name;
+					ownIds.add(k.id);
+				}
 				names = next;
 				open = true;
 			} catch {
@@ -158,6 +170,7 @@
 				method: 'POST',
 				body: JSON.stringify({ name, lang })
 			});
+			ownIds.add(created.id);
 			await addKeywordById(created.id, created.name);
 			kwError = null;
 		} catch (err) {
@@ -175,7 +188,9 @@
 		const name = rawName.trim();
 		if (!name) return;
 		const lower = name.toLowerCase();
-		const knownId = Object.keys(names).find((id) => (names[id] ?? '').toLowerCase() === lower);
+		const knownId = Object.keys(names).find(
+			(id) => ownIds.has(id) && (names[id] ?? '').toLowerCase() === lower
+		);
 		if (knownId) {
 			await addKeywordById(knownId, names[knownId]);
 			return;
@@ -185,7 +200,10 @@
 			const q = new URLSearchParams({ search: name, limit: '5', lang });
 			const res = await api<Keyword[]>(`/keywords?${q.toString()}`);
 			const next = { ...names };
-			for (const k of res ?? []) next[k.id] = k.name;
+			for (const k of res ?? []) {
+				next[k.id] = k.name;
+				ownIds.add(k.id);
+			}
 			names = next;
 			const exact = (res ?? []).find((k) => k.name.toLowerCase() === lower);
 			if (exact) {
@@ -200,6 +218,11 @@
 		}
 	}
 
+	/** Tambahkan beberapa keyword berdasarkan nama (cari yang sudah ada, buat bila belum) — mis. hasil terjemahan. */
+	export async function addByNames(rawNames: string[]) {
+		for (const n of rawNames) await addQuickByName(n);
+	}
+
 	function removeKeyword(id: string) {
 		selected = selected.filter((s) => s !== id);
 		onChange();
@@ -207,12 +230,15 @@
 </script>
 
 <div class="relative" bind:this={box}>
-	<span class={labelCls}>
-		{label}
-		<span class="text-ash-2 normal-case tracking-normal"
-			>{min > 0 ? `(minimal ${min})` : '(opsional)'}</span
-		>
-	</span>
+	<div class="mb-2 flex h-[15px] items-center justify-between gap-3">
+		<span class={cn(labelCls, 'mb-0')}>
+			{label}
+			<span class="text-ash-2 normal-case tracking-normal"
+				>{min > 0 ? `(minimal ${min})` : '(opsional)'}</span
+			>
+		</span>
+		{#if action}<span class="flex h-[15px] items-center">{@render action()}</span>{/if}
+	</div>
 	<div
 		class={cn(
 			'w-full border hairline border-solid rounded-[3px] bg-card-2 px-3 py-2 min-h-[42px] flex flex-wrap gap-1.5 items-center cursor-text transition-colors focus-within:border-safelight focus-within:ring-2 focus-within:ring-safelight/15',

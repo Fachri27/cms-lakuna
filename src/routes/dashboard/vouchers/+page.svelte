@@ -31,6 +31,8 @@
 		quotaTotal: number | null;
 		quotaPerUser: number;
 		usedCount: number;
+		/** Tampil di bar promo situs (GET /vouchers/active). Voucher baru privat sampai ditandai. */
+		isPublic?: boolean;
 	}
 
 	interface Meta {
@@ -213,6 +215,18 @@
 			void fetchVouchers();
 		} catch (err) {
 			alert((err as Error)?.message || 'Gagal menghapus voucher');
+		}
+	}
+
+	async function togglePublic(v: Voucher) {
+		try {
+			await api(`/vouchers/${v.id}/public`, {
+				method: 'PATCH',
+				body: JSON.stringify({ isPublic: !v.isPublic })
+			});
+			void fetchVouchers();
+		} catch (err) {
+			alert((err as Error)?.message || 'Gagal mengubah tampilan promo');
 		}
 	}
 
@@ -443,11 +457,18 @@
 								<td class="px-7 py-4 text-ash tnum">
 									{v.quotaTotal == null ? `${v.usedCount} / ∞` : `${v.usedCount} / ${v.quotaTotal}`}
 								</td>
-								<td class="px-7 py-4"><Badge status={statusOf(v)} /></td>
+								<td class="px-7 py-4">
+									<Badge status={statusOf(v)} />
+									{#if v.isPublic}<span class="ml-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2" title="Tampil di bar promo situs">Publik</span>{/if}
+								</td>
 								<td class="px-7 py-4 text-right">
 									<div class="flex justify-end gap-2">
 										<Btn variant="ghost" onclick={() => toggleActive(v)}>
 											{v.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+										</Btn>
+										<!-- Publik = kodenya disiarkan di bar promo situs; privat = hanya untuk yang diberi kodenya. -->
+										<Btn variant="ghost" onclick={() => togglePublic(v)}>
+											{v.isPublic ? 'Jadikan privat' : 'Tampilkan di promo'}
 										</Btn>
 										<Btn variant="ghost" onclick={() => openEdit(v)}>Edit</Btn>
 										<Btn variant="danger" onclick={() => handleDelete(v.id)}>Hapus</Btn>

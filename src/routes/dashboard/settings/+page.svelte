@@ -20,6 +20,8 @@
 	let sharePct = $state('70');
 	let shareSaving = $state(false);
 	let shareMsg = $state('');
+	/** Setting gagal dimuat → simpan dinonaktifkan supaya nilai asli tidak tertimpa. */
+	let loadFailed = $state(false);
 
 	onMount(() => {
 		void fetchSettings();
@@ -34,14 +36,17 @@
 			presets = JSON.parse(presetVal?.value || '[]');
 			sharePct = shareVal?.value || '70';
 		} catch {
-			presets = [50000, 100000, 150000, 200000, 250000, 350000, 500000];
-			sharePct = '70';
+			// Nilai bawaan hanya ada di API (SETTING_DEFAULTS). Jangan isi angka tebakan di sini: menyimpan dari
+			// keadaan itu akan menimpa preset & persentase yang sebenarnya.
+			loadFailed = true;
+			message = 'Gagal memuat setting. Muat ulang halaman sebelum mengubah.';
 		} finally {
 			loading = false;
 		}
 	}
 
 	async function savePresets(values: number[]) {
+		if (loadFailed) return;
 		saving = true;
 		message = '';
 		try {
@@ -75,6 +80,7 @@
 	}
 
 	async function saveSharePct() {
+		if (loadFailed) return;
 		const n = Number(sharePct);
 		if (!Number.isFinite(n) || n < 0 || n > 100) {
 			shareMsg = 'Harus angka 0–100';

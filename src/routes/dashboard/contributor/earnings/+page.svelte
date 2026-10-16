@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
-	import { api, clearTokens } from '$lib/api';
+	import { api } from '$lib/api';
 	import { formatPrice } from '$lib/format';
-	import { cn } from '$lib/cn';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import Panel from '$lib/components/Panel.svelte';
 	import Stat from '$lib/components/Stat.svelte';
@@ -38,13 +35,7 @@
 		createdAt: string;
 	}
 
-	const NAV = [
-		{ label: 'Dashboard', href: '/dashboard/contributor' },
-		{ label: 'Upload', href: '/dashboard/contributor/upload' },
-		{ label: 'Penghasilan', href: '/dashboard/contributor/earnings' }
-	];
 
-	const pathname = $derived($page.url.pathname);
 
 	let summary = $state<Summary | null>(null);
 	let earnings = $state<Earning[]>([]);
@@ -74,47 +65,9 @@
 		return src === 'STANDAR' ? 'Pembelian satuan' : 'Langganan';
 	}
 
-	function logout() {
-		clearTokens();
-		goto('/login');
-	}
 </script>
 
-<div class="min-h-screen">
-	<header class="bg-ink text-paper rounded-[3px]">
-		<div class="px-6 pt-6 pb-4 flex items-center justify-between gap-4">
-			<div>
-				<div class="flex items-center gap-2.5">
-					<span aria-hidden="true" class="text-safelight text-lg leading-none">▣</span>
-					<span class="font-display text-[1.4rem] leading-none tracking-[-0.01em]">Lakuna</span>
-				</div>
-				<p class="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-paper/40 pl-7">
-					Kontributor
-				</p>
-			</div>
-			<button
-				onclick={logout}
-				class="font-mono text-[10.5px] uppercase tracking-[0.16em] text-paper/55 hover:text-safelight transition-colors"
-			>
-				Keluar
-			</button>
-		</div>
-		<nav class="px-6 pb-5 flex gap-2">
-			{#each NAV as item}
-				{@const active = pathname === item.href}
-				<a
-					href={item.href}
-					class={cn(
-						'px-3.5 py-2 rounded-[3px] font-mono text-[10.5px] uppercase tracking-[0.16em] transition-colors',
-						active ? 'bg-paper/[0.08] text-paper' : 'text-paper/55 hover:text-paper/90 hover:bg-paper/[0.04]'
-					)}
-				>
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-	</header>
-
+<div>
 	<div class="rise py-10">
 		<SectionHeader index="01" kicker="Penghasilan" title="Dompet" class="mb-10" />
 

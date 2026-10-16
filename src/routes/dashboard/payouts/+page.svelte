@@ -20,6 +20,15 @@
 		pending: number;
 		paidOut: number;
 		lifetimeEarned: number;
+		/** Rekening tujuan yang didaftarkan kontributor sendiri dari halaman profil situs. */
+		payoutAccount: {
+			type: 'BANK' | 'EWALLET';
+			provider: string;
+			providerLabel: string;
+			accountNumber: string;
+			accountName: string;
+			updatedAt: string;
+		} | null;
 	}
 
 	interface Payout {
@@ -160,8 +169,13 @@
 	function openPay(c: Contributor) {
 		selected = c;
 		amount = String(c.pending);
+		method = c.payoutAccount?.type === 'EWALLET' ? 'EWALLET' : 'BANK_TRANSFER';
 		message = '';
 	}
+
+	/** Rekening yang baru diganti (< 7 hari) patut dicek ulang ke kontributor sebelum transfer. */
+	const RECENT_MS = 7 * 24 * 60 * 60 * 1000;
+	const isRecent = (iso: string) => Date.now() - new Date(iso).getTime() < RECENT_MS;
 
 	onMount(fetchAll);
 </script>
@@ -228,6 +242,13 @@
 						<div class="min-w-0">
 							<p class="text-ink truncate">{c.realName || c.email}</p>
 							<p class="font-mono text-[11px] text-ash-2 truncate">{c.email}</p>
+							{#if c.payoutAccount}
+								<p class="font-mono text-[11px] text-ash truncate mt-0.5">
+									{c.payoutAccount.providerLabel} {c.payoutAccount.accountNumber} · a.n. {c.payoutAccount.accountName}
+								</p>
+							{:else}
+								<p class="font-mono text-[11px] text-safelight-dim mt-0.5">Belum mendaftarkan rekening</p>
+							{/if}
 						</div>
 						<div class="flex items-center gap-6 shrink-0">
 							<div class="text-right">
@@ -275,7 +296,24 @@
 
 	{#if selected}
 		<Modal kicker="Bayar Kontributor" title={selected.realName || selected.email} onclose={() => (selected = null)}>
-			<p class="font-mono text-[11px] text-ash mb-6">Saldo tertunda {selected ? formatPrice(selected.pending) : ''}</p>
+			<p class="font-mono text-[11px] text-ash mb-4">Saldo tertunda {selected ? formatPrice(selected.pending) : ''}</p>
+			{#if selected.payoutAccount}
+				{@const acc = selected.payoutAccount}
+				<div class="mb-6 border hairline border-solid px-4 py-3">
+					<p class={labelCls}>Rekening tujuan · {acc.type === 'BANK' ? 'Bank' : 'E-wallet'}</p>
+					<p class="font-display text-lg">{acc.providerLabel} <span class="font-mono tnum select-all">{acc.accountNumber}</span></p>
+					<p class="font-mono text-[11px] text-ash">a.n. {acc.accountName}</p>
+					{#if isRecent(acc.updatedAt)}
+						<p class="text-safelight-dim text-xs font-mono border-l-2 border-safelight pl-3 py-1 mt-2">
+							Rekening diganti {new Date(acc.updatedAt).toLocaleString('id-ID')} — pastikan ke kontributor sebelum transfer
+						</p>
+					{/if}
+				</div>
+			{:else}
+				<p class="text-safelight-dim text-xs font-mono border-l-2 border-safelight pl-3 py-1 mb-6">
+					Kontributor belum mendaftarkan rekening pencairan di profilnya
+				</p>
+			{/if}
 
 			<form onsubmit={submitPayout} class="space-y-4">
 				<div class="grid gap-5 sm:grid-cols-2">

@@ -6,8 +6,9 @@ export default defineConfig({
 	plugins: [sveltekit(), tailwindcss()],
 	server: {
 		port: 3001,
-		// Izinkan host tunnel (cloudflared) untuk akses CMS publik.
-		allowedHosts: true,
+		// Hanya host tunnel (cloudflared) — bukan `true`: itu mematikan proteksi DNS-rebinding Vite.
+		// localhost & IP selalu diizinkan.
+		allowedHosts: ['.trycloudflare.com'],
 		hmr: {
 			overlay: false,
 			timeout: 60000

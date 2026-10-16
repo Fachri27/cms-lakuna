@@ -16,7 +16,8 @@
 		CalendarClock,
 		Settings,
 		FileText,
-		LogOut
+		LogOut,
+		FingerprintPattern
 	} from '@lucide/svelte';
 
 	export const GROUPS = [
@@ -59,6 +60,7 @@
 			items: [
 				{ label: 'Pengguna', href: '/dashboard/users', icon: Users },
 				{ label: 'Pengaturan', href: '/dashboard/settings', icon: Settings },
+				{ label: 'Keamanan', href: '/dashboard/security', icon: FingerprintPattern },
 				{ label: 'Template Lisensi', href: '/dashboard/license-template', icon: FileText }
 			]
 		}
@@ -75,7 +77,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { clearTokens, ensureSession } from '$lib/api';
+	import { clearTokens, ensureSession, logoutSession } from '$lib/api';
 	import { decodeJwt, getAccessToken, isExpired } from '$lib/auth';
 	import { cn } from '$lib/cn';
 
@@ -109,8 +111,8 @@
 		ready = true;
 	});
 
-	function logout() {
-		clearTokens();
+	async function logout() {
+		await logoutSession();
 		goto('/login');
 	}
 </script>
@@ -125,11 +127,10 @@
 	<div class="flex min-h-screen">
 		<aside class="w-64 shrink-0 h-screen sticky top-0 bg-ink text-paper flex flex-col border-r border-ink-3">
 			<div class="px-6 pt-7 pb-6">
-				<div class="flex items-center gap-2.5">
-					<span aria-hidden class="text-safelight text-lg leading-none">▣</span>
-					<span class="font-display text-[1.55rem] leading-none tracking-[-0.01em]">Lakuna</span>
-				</div>
-				<p class="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-paper/40 pl-7">Studio / CMS</p>
+				<!-- Logo sama dengan navbar situs (static/logo1-sm.png = salinan apps/frontend/static),
+					diputihkan seperti navbar di atas latar gelap. -->
+				<img src="/logo1-sm.png" alt="Lakuna" width="200" height="36" class="block h-7 w-auto [filter:brightness(0)_invert(1)]" />
+				<p class="mt-2.5 font-mono text-[10px] uppercase tracking-[0.28em] text-paper/40">Studio / CMS</p>
 			</div>
 			<div class="mx-6 h-px bg-paper/10"></div>
 			<nav class="flex-1 overflow-y-auto px-3 py-5">

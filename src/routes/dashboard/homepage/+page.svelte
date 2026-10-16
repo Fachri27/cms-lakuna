@@ -94,7 +94,7 @@
 		{ key: 'video', label: '03 · Contact sheet (judul)', hint: 'Judul grid video drone. Videonya di bawah (03 · Video contact sheet)', fields: ['kicker', 'title', 'body'], uses: 'kicker, judul, teks' },
 		{ key: 'anjungan_1', label: '04 · Peta Nusantara', hint: 'Judul adegan peta (globe → mendarat)', fields: ['kicker', 'title', 'body'], uses: 'kicker, judul, teks' },
 		{ key: 'harga', label: '06 · Teaser harga', hint: 'Judul, deskripsi, tombol, dan foto latar papan tarif langganan', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul, teks, tombol, gambar' },
-		{ key: 'banding', label: '07 · Perbandingan pratinjau', hint: 'Judul + teks panel "pratinjau vs unduhan". Fotonya otomatis dari arsip', fields: ['title', 'body'], uses: 'judul, teks' },
+		{ key: 'banding', label: '07 · Perbandingan pratinjau', hint: 'Gambar panel "pratinjau vs unduhan". Kosong = otomatis dari arsip (slider geser)', fields: ['image', 'title', 'body'], uses: 'gambar' },
 		{ key: 'percaya', label: '08 · Dipercaya (label)', hint: 'Label kecil di atas dinding logo. Logonya di bawah (08 · Logo pelanggan)', fields: ['kicker'], uses: 'kicker' },
 		{ key: 'mulai', label: '09 · Penutup', hint: 'Ajakan mulai sebelum footer', fields: ['image', 'kicker', 'title', 'body', 'cta'], uses: 'kicker, judul, teks, tombol, gambar' },
 		{ key: 'manifesto', label: '10 · Manifesto (cadangan)', hint: 'Hanya sebagai foto cadangan latar papan tarif bila section Harga tidak pasang gambar', fields: ['image'], uses: 'gambar' },

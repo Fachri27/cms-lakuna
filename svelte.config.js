@@ -52,7 +52,11 @@ const config = {
 				'connect-src': ['self', apiOrigin, ...devConnect],
 				// Preview PDF template lisensi = blob: di <iframe> (dashboard/license-template).
 				// Tanpa ini frame-src jatuh ke default-src 'self' → "This content is blocked".
-				'frame-src': ['self', 'blob:']
+				'frame-src': ['self', 'blob:'],
+				'object-src': ['none'],
+				'base-uri': ['self'],
+				'form-action': ['self'],
+				'frame-ancestors': ['none']
 			}
 		}
 	}

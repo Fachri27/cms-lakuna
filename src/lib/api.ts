@@ -12,9 +12,10 @@ function getTokens() {
 
 export function setTokens(access: string | null, refresh?: string | null) {
 	if (typeof localStorage === 'undefined') return;
+	// Token TIDAK disalin ke document.cookie (tak dibaca server CMS; cookie non-HttpOnly hanya memperluas
+	// tempat token bisa dicuri). Baris max-age=0 membersihkan sisa cookie versi lama.
 	if (access) {
 		localStorage.setItem('accessToken', access);
-		document.cookie = `accessToken=${access}; path=/; max-age=900`;
 	} else {
 		localStorage.removeItem('accessToken');
 		document.cookie = 'accessToken=; path=/; max-age=0';
@@ -22,7 +23,7 @@ export function setTokens(access: string | null, refresh?: string | null) {
 	if (refresh !== undefined) {
 		if (refresh) {
 			localStorage.setItem('refreshToken', refresh);
-			document.cookie = `refreshToken=${refresh}; path=/; max-age=${60 * 60 * 24 * 7}`;
+			document.cookie = 'refreshToken=; path=/; max-age=0';
 		} else {
 			localStorage.removeItem('refreshToken');
 			document.cookie = 'refreshToken=; path=/; max-age=0';
@@ -38,6 +39,23 @@ export function setTokens(access: string | null, refresh?: string | null) {
 
 export function clearTokens() {
 	setTokens(null, null);
+}
+
+/** Keluar: cabut sesi di server (refresh token + blacklist token akses), lalu bersihkan lokal. */
+export async function logoutSession() {
+	const { access } = getTokens();
+	if (access) {
+		try {
+			await fetch(`${API_BASE}/auth/logout`, {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${access}` },
+				signal: AbortSignal.timeout(5000)
+			});
+		} catch {
+			/* jaringan gagal: tetap keluar lokal */
+		}
+	}
+	clearTokens();
 }
 
 const REFRESH_SKEW_MS = 60 * 1000; // refresh 1 menit sebelum akses kedaluwarsa
@@ -83,7 +101,7 @@ function scheduleProactive(delay?: number) {
 }
 
 /** Refresh dengan single-flight: 401 paralel berbagi satu request. */
-async function doRefresh(): Promise<string> {
+async function doRefresh(): Promise<{ access: string; refresh: string | null }> {
 	const { refresh } = getTokens();
 	if (!refresh) {
 		const err = new Error('no-refresh-token') as Error & { fatal?: boolean };
@@ -114,16 +132,17 @@ async function doRefresh(): Promise<string> {
 		err.fatal = true;
 		throw err;
 	}
-	return token as string;
+	// Refresh token dirotasi server: simpan yang baru (yang lama tak berlaku lagi).
+	return { access: token as string, refresh: data?.data?.refreshToken ?? null };
 }
 
 function refreshSingleflight(): Promise<string | null> {
 	if (!inflight) {
 		inflight = doRefresh().then(
-			(token) => {
+			({ access, refresh }) => {
 				inflight = null;
-				setTokens(token);
-				return token;
+				setTokens(access, refresh ?? undefined);
+				return access;
 			},
 			(err) => {
 				inflight = null;
@@ -156,6 +175,8 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
+	// Segmen "." / ".." (mentah atau %2e) dari parameter URL bisa membelokkan request bertoken ke endpoint lain.
+	if (/(^|\/)(\.|%2e){1,2}(\/|$)/i.test(path.split(/[?#]/)[0])) throw new ApiError(400, 'Path tidak valid');
 	const { access } = getTokens();
 	const headers = new Headers(options.headers);
 	const isForm = options.body instanceof FormData;

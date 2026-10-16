@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { api, ApiError } from '$lib/api';
-	import { formatPrice } from '$lib/format';
+	import { formatPrice, formatTakenAt } from '$lib/format';
 	import Panel from '$lib/components/Panel.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import Btn from '$lib/components/Btn.svelte';
@@ -17,6 +17,8 @@
 		descriptionEn?: string | null;
 		photographer?: string | null;
 		location?: string | null;
+		/** Tanggal & waktu pengambilan isian kontributor (ISO) atau null. */
+		takenAt?: string | null;
 		width?: number | null;
 		height?: number | null;
 		thumbUrl?: string | null;
@@ -440,8 +442,9 @@
 						{#if priceMsg}<p class="mt-1 text-[11px] text-ash">{priceMsg}</p>{/if}
 					</div>
 					<div><dt class={LBL}>Dimensi</dt><dd class="mt-0.5 font-mono text-[12px]">{d.width && d.height ? `${d.width} × ${d.height} px` : '—'}</dd></div>
-					<div><dt class={LBL}>Tanggal</dt><dd class="mt-0.5">{fmtDate(d.createdAt)}</dd></div>
+					<div><dt class={LBL}>Tanggal unggah</dt><dd class="mt-0.5">{fmtDate(d.createdAt)}</dd></div>
 					<div><dt class={LBL}>Lokasi</dt><dd class="mt-0.5">{d.location || '—'}</dd></div>
+					<div><dt class={LBL}>Tanggal pengambilan</dt><dd class="mt-0.5 tnum">{formatTakenAt(d.takenAt) || '—'}</dd></div>
 					<div class="sm:col-span-2"><dt class={LBL}>Deskripsi</dt><dd class="mt-0.5 text-ash">{d.description || '—'}</dd></div>
 					{#if d.titleEn}
 						<div class="sm:col-span-2"><dt class={LBL}>Title (EN)</dt><dd class="mt-0.5">{d.titleEn}</dd></div>

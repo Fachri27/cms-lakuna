@@ -9,6 +9,7 @@
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import { ArrowLeft, ArrowRight, Pencil, X } from '@lucide/svelte';
 
 	interface Logo {
 		id: string;
@@ -191,6 +192,7 @@
 	</SectionHeader>
 
 	<Panel class="mb-6">
+		<div class="p-5 sm:p-6">
 		<p class="mb-4 font-mono text-[10px] uppercase tracking-[0.16em] text-ash">Unggah logo</p>
 		<form onsubmit={handleUpload} class="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
 			<Field label="Nama">
@@ -203,7 +205,19 @@
 				{#if errors.name}<p class="mt-1.5 font-mono text-xs text-safelight-dim">{errors.name}</p>{/if}
 			</Field>
 			<Field label="Berkas (JPG / PNG / WebP)">
-				<input type="file" accept="image/jpeg,image/png,image/webp" onchange={onFile} class={inputCls} />
+				<div class="flex items-center gap-3">
+					<input
+						id="logoFile"
+						type="file"
+						accept="image/jpeg,image/png,image/webp"
+						onchange={onFile}
+						class="hidden"
+					/>
+					<Btn onclick={() => document.getElementById('logoFile')?.click()}>Pilih berkas</Btn>
+					<span class="min-w-0 flex-1 truncate font-mono text-xs text-ash-2">
+						{imageFile ? imageFile.name : 'Belum ada berkas dipilih'}
+					</span>
+				</div>
 				{#if errors.image}<p class="mt-1.5 font-mono text-xs text-safelight-dim">{errors.image}</p>{/if}
 			</Field>
 			<Btn type="submit" variant="primary" disabled={saving}>
@@ -218,6 +232,7 @@
 		{/if}
 		{#if errors.general}<p class="mt-3 font-mono text-xs text-safelight-dim">{errors.general}</p>{/if}
 		{#if msg}<p class="mt-3 font-mono text-xs text-ink">{msg}</p>{/if}
+		</div>
 	</Panel>
 
 	{#if fetching}
@@ -227,12 +242,12 @@
 	{:else}
 		<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
 			{#each logos as l, i (l.id)}
-				<li class="group relative overflow-hidden rounded-[3px] border border-ink/15 bg-card p-4">
-					<div class="grid h-20 place-items-center rounded bg-black/85 px-3">
+				<li class="flex flex-col overflow-hidden rounded-[3px] border border-ink/15 bg-card p-4">
+					<div class="grid h-24 shrink-0 place-items-center rounded bg-black/85 px-3">
 						{#if editingId === l.id && editPreview}
-							<img src={editPreview} alt="Gambar pengganti" class="max-h-14 w-auto max-w-full object-contain" />
+							<img src={editPreview} alt="Gambar pengganti" class="max-h-16 w-auto max-w-full object-contain" />
 						{:else if l.imageUrl}
-							<img src={l.imageUrl} alt={l.name} class="max-h-14 w-auto max-w-full object-contain" />
+							<img src={l.imageUrl} alt={l.name} class="max-h-16 w-auto max-w-full object-contain" />
 						{:else}
 							<span class="font-mono text-[10px] uppercase tracking-[0.16em] text-ash-2">tanpa gambar</span>
 						{/if}
@@ -261,33 +276,33 @@
 					{:else}
 						<p class="mt-3 truncate text-sm font-medium">{l.name}</p>
 					{/if}
-					<div class="absolute right-1.5 top-1.5 flex gap-1">
+					<div class="mt-3 flex items-center justify-end gap-1.5 border-t border-ink/10 pt-2.5">
 						<button
 							type="button"
 							onclick={() => void move(l.id, -1)}
 							disabled={i === 0}
-							class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 disabled:opacity-30"
+							class="grid h-8 w-8 place-items-center rounded-full text-ash-2 hover:bg-ink/[0.06] hover:text-ink disabled:opacity-30"
 							title="Geser kiri"
-						>←</button>
+						><ArrowLeft size={15} /></button>
 						<button
 							type="button"
 							onclick={() => void move(l.id, 1)}
 							disabled={i === logos.length - 1}
-							class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 disabled:opacity-30"
+							class="grid h-8 w-8 place-items-center rounded-full text-ash-2 hover:bg-ink/[0.06] hover:text-ink disabled:opacity-30"
 							title="Geser kanan"
-						>→</button>
+						><ArrowRight size={15} /></button>
 						<button
 							type="button"
 							onclick={() => startEdit(l)}
-							class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 hover:bg-safelight"
+							class="grid h-8 w-8 place-items-center rounded-full text-ash-2 hover:bg-ink/[0.06] hover:text-ink"
 							title="Ubah nama / gambar"
-						>✎</button>
+						><Pencil size={15} /></button>
 						<button
 							type="button"
 							onclick={() => void handleDelete(l.id)}
-							class="grid h-5 w-5 place-items-center rounded-full bg-black/55 font-mono text-[10px] text-white/90 hover:bg-safelight"
+							class="grid h-8 w-8 place-items-center rounded-full text-ash-2 hover:bg-safelight hover:text-white"
 							title="Hapus"
-						>✕</button>
+						><X size={15} /></button>
 					</div>
 				</li>
 			{/each}

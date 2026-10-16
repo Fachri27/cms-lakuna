@@ -11,11 +11,15 @@
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 	import Field from '$lib/components/Field.svelte';
+	import TranslateButton from '$lib/components/TranslateButton.svelte';
+	import { translateToEn } from '$lib/translate';
 
 	interface Category {
 		id: string;
 		name: string;
 		description: string | null;
+		nameEn: string | null;
+		descriptionEn: string | null;
 		imageUrl: string | null;
 		imageKey: string | null;
 	}
@@ -34,6 +38,8 @@
 	let saving = $state(false);
 	let formName = $state('');
 	let formDesc = $state('');
+	let formNameEn = $state('');
+	let formDescEn = $state('');
 	let imageFile = $state<File | null>(null);
 	let preview = $state<string | null>(null);
 	let errors = $state<Record<string, string>>({});
@@ -87,6 +93,8 @@
 	function resetForm() {
 		formName = '';
 		formDesc = '';
+		formNameEn = '';
+		formDescEn = '';
 		imageFile = null;
 		if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
 		preview = null;
@@ -108,6 +116,8 @@
 			const cat = await api<Category>(`/categories/${id}`);
 			formName = cat.name;
 			formDesc = cat.description ?? '';
+			formNameEn = cat.nameEn ?? '';
+			formDescEn = cat.descriptionEn ?? '';
 			preview = cat.imageUrl;
 		} catch (err) {
 			console.error(err);
@@ -134,6 +144,15 @@
 		preview = URL.createObjectURL(file);
 	}
 
+	async function translateName() {
+		const [en] = await translateToEn([formName.trim()]);
+		formNameEn = (en ?? '').slice(0, 100);
+	}
+	async function translateDesc() {
+		const [en] = await translateToEn([formDesc.trim()]);
+		formDescEn = (en ?? '').slice(0, 500);
+	}
+
 	async function errorMessage(res: Response): Promise<string> {
 		const j = (await res.json().catch(() => null)) as {
 			error?: { message?: string };
@@ -153,6 +172,9 @@
 			const fd = new FormData();
 			fd.append('name', formName.trim());
 			if (formDesc.trim()) fd.append('description', formDesc.trim());
+			// Selalu dikirim, termasuk string kosong, supaya versi Inggris bisa dikosongkan.
+			fd.append('nameEn', formNameEn.trim());
+			fd.append('descriptionEn', formDescEn.trim());
 			if (imageFile) fd.append('image', imageFile);
 			const res = await apiFetch(editingId ? `/categories/${editingId}` : '/categories', {
 				method: editingId ? 'PATCH' : 'POST',
@@ -213,26 +235,56 @@
 					{#if errors.general}
 						<p class="text-safelight-dim text-xs font-mono">{errors.general}</p>
 					{/if}
-					<Field label="Nama">
-						<input
-							type="text"
-							bind:value={formName}
-							class={inputCls}
-							placeholder="Nama kategori"
-							autofocus
-						/>
-						{#if errors.name}
-							<p class="mt-1.5 font-mono text-[11px] text-safelight-dim">{errors.name}</p>
-						{/if}
-					</Field>
-					<Field label="Deskripsi (opsional)">
-						<textarea
-							bind:value={formDesc}
-							rows={3}
-							class={cn(inputCls, 'resize-none')}
-							placeholder="Deskripsi kategori…"
-						></textarea>
-					</Field>
+					<div class="grid gap-5 sm:grid-cols-2">
+						<Field label="Nama (ID)">
+							<input
+								type="text"
+								name="cat-name"
+								bind:value={formName}
+								maxlength={100}
+								class={inputCls}
+								placeholder="Nama kategori"
+								autofocus
+							/>
+							{#if errors.name}
+								<p class="mt-1.5 font-mono text-[11px] text-safelight-dim">{errors.name}</p>
+							{/if}
+						</Field>
+						<Field label="Name (EN) · opsional">
+							{#snippet action()}<TranslateButton run={translateName} disabled={!formName.trim()} source={formName.trim()} target="cat-name-en" />{/snippet}
+							<input
+								type="text"
+								name="cat-name-en"
+								bind:value={formNameEn}
+								maxlength={100}
+								class={inputCls}
+								placeholder="English name"
+							/>
+						</Field>
+					</div>
+					<div class="grid gap-5 sm:grid-cols-2">
+						<Field label="Deskripsi (ID) · opsional">
+							<textarea
+								name="cat-desc"
+								bind:value={formDesc}
+								maxlength={500}
+								rows={3}
+								class={cn(inputCls, 'resize-none')}
+								placeholder="Deskripsi kategori…"
+							></textarea>
+						</Field>
+						<Field label="Description (EN) · opsional">
+							{#snippet action()}<TranslateButton run={translateDesc} disabled={!formDesc.trim()} source={formDesc.trim()} target="cat-desc-en" />{/snippet}
+							<textarea
+								name="cat-desc-en"
+								bind:value={formDescEn}
+								maxlength={500}
+								rows={3}
+								class={cn(inputCls, 'resize-none')}
+								placeholder="English description…"
+							></textarea>
+						</Field>
+					</div>
 					<Field label="Gambar (opsional)">
 						<button
 							type="button"
@@ -308,7 +360,10 @@
 										<span class="text-xs text-ash">—</span>
 									{/if}
 								</td>
-								<td class="px-7 py-4 text-ink">{cat.name}</td>
+								<td class="px-7 py-4 text-ink">
+									{cat.name}
+									{#if cat.nameEn}<span class="block font-mono text-[10px] text-ash-2">EN · {cat.nameEn}</span>{/if}
+								</td>
 								<td class="px-7 py-4 text-ash">{cat.description || '—'}</td>
 								<td class="px-7 py-4">
 									<div class="flex justify-end gap-2">

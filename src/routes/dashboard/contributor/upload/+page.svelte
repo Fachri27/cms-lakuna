@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { api, apiFetch, clearTokens } from '$lib/api';
-	import { formatPrice } from '$lib/format';
+	import { api, apiFetch } from '$lib/api';
+	import { formatPrice, localInputToIso, takenAtError, takenAtMax, TAKEN_AT_MIN } from '$lib/format';
 	import { inputCls } from '$lib/ui-classes';
 	import { cn } from '$lib/cn';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
@@ -12,13 +11,7 @@
 	import Btn from '$lib/components/Btn.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
 
-	const NAV = [
-		{ label: 'Dashboard', href: '/dashboard/contributor' },
-		{ label: 'Upload', href: '/dashboard/contributor/upload' },
-		{ label: 'Penghasilan', href: '/dashboard/contributor/earnings' }
-	];
 
-	const pathname = $derived($page.url.pathname);
 
 	let loading = $state(false);
 	let errors = $state<Record<string, string>>({});
@@ -29,8 +22,11 @@
 		price: '',
 		description: '',
 		descriptionEn: '',
+		/** Tanggal & waktu pengambilan: nilai datetime-local (waktu lokal browser). */
+		takenAt: '',
 		type: 'FOTO'
 	});
+	const takenMax = takenAtMax();
 	let file = $state<File | null>(null);
 	let preview = $state<string | null>(null);
 	let fileType = $state<'image' | 'video'>('image');
@@ -65,6 +61,8 @@
 		if (!form.photographer) newErrors.photographer = 'Photographer harus diisi';
 		if (!form.price) newErrors.price = 'Price harus diisi';
 		if (!file) newErrors.file = 'Photo/Video harus diupload';
+		const takenErr = takenAtError(form.takenAt);
+		if (takenErr) newErrors.takenAt = takenErr;
 		if (Object.keys(newErrors).length > 0) {
 			errors = newErrors;
 			return;
@@ -79,6 +77,9 @@
 			if (form.description) formData.append('description', form.description);
 			if (form.titleEn.trim()) formData.append('titleEn', form.titleEn.trim());
 			if (form.descriptionEn.trim()) formData.append('descriptionEn', form.descriptionEn.trim());
+			// datetime-local (waktu lokal browser) → ISO UTC.
+			const takenAt = localInputToIso(form.takenAt);
+			if (takenAt) formData.append('takenAt', takenAt);
 			formData.append('photo', file as File);
 			const res = await apiFetch('/photos', { method: 'POST', body: formData });
 			const json = await res.json().catch(() => null);
@@ -100,47 +101,9 @@
 		}
 	}
 
-	function logout() {
-		clearTokens();
-		goto('/login');
-	}
 </script>
 
-<div class="min-h-screen">
-	<header class="bg-ink text-paper rounded-[3px]">
-		<div class="px-6 pt-6 pb-4 flex items-center justify-between gap-4">
-			<div>
-				<div class="flex items-center gap-2.5">
-					<span aria-hidden="true" class="text-safelight text-lg leading-none">▣</span>
-					<span class="font-display text-[1.4rem] leading-none tracking-[-0.01em]">Lakuna</span>
-				</div>
-				<p class="mt-2 font-mono text-[10px] uppercase tracking-[0.28em] text-paper/40 pl-7">
-					Kontributor
-				</p>
-			</div>
-			<button
-				onclick={logout}
-				class="font-mono text-[10.5px] uppercase tracking-[0.16em] text-paper/55 hover:text-safelight transition-colors"
-			>
-				Keluar
-			</button>
-		</div>
-		<nav class="px-6 pb-5 flex gap-2">
-			{#each NAV as item}
-				{@const active = pathname === item.href}
-				<a
-					href={item.href}
-					class={cn(
-						'px-3.5 py-2 rounded-[3px] font-mono text-[10.5px] uppercase tracking-[0.16em] transition-colors',
-						active ? 'bg-paper/[0.08] text-paper' : 'text-paper/55 hover:text-paper/90 hover:bg-paper/[0.04]'
-					)}
-				>
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-	</header>
-
+<div>
 	<div class="rise py-10">
 		<SectionHeader index="01" kicker="Kontribusi" title="Upload Foto" class="mb-8" />
 
@@ -262,6 +225,19 @@
 					{#if errors.price}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.price}</p>{/if}
 				</Field>
 				</div>
+
+				<Field label="Tanggal & waktu pengambilan (opsional)">
+					<input
+						name="takenAt"
+						type="datetime-local"
+						value={form.takenAt}
+						oninput={handleChange}
+						min={TAKEN_AT_MIN}
+						max={takenMax}
+						class={cn(inputCls, 'tnum')}
+					/>
+					{#if errors.takenAt}<p class="mt-1.5 text-safelight-dim text-xs font-mono">{errors.takenAt}</p>{/if}
+				</Field>
 
 				<div class="grid gap-5 sm:grid-cols-2">
 				<Field label="Deskripsi (ID) · opsional">

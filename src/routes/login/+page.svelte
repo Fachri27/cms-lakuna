@@ -4,13 +4,19 @@
 	import { apiFetch, setTokens } from '$lib/api';
 	import { decodeJwt, getAccessToken, validateEmail } from '$lib/auth';
 	import { inputCls, labelCls } from '$lib/ui-classes';
+	import { loginWithPasskey, passkeyErrorMessage, passkeySupported } from '$lib/passkey';
 
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
 	let submitting = $state(false);
+	let biometricBusy = $state(false);
+	let biometric = $state(false);
+	const FIRST_TIME_HINT =
+		'Belum ada biometrik terdaftar di perangkat ini. Masuk dengan password dulu, lalu daftarkan di menu Keamanan.';
 
 	onMount(() => {
+		biometric = passkeySupported();
 		const token = getAccessToken();
 		if (!token) return;
 		try {
@@ -42,17 +48,38 @@
 			const json = await res.json();
 			if (!res.ok) throw new Error(json?.error?.message ?? json?.message ?? 'Login gagal');
 			const accessToken = json.data?.accessToken;
-			const refreshToken = json.data?.refreshToken ?? null;
 			if (!accessToken) throw new Error('Token tidak ditemukan di respons');
-			setTokens(accessToken, refreshToken);
-			const role = decodeJwt(accessToken)?.role;
-			if (role === 'ADMIN') goto('/dashboard');
-			else if (role === 'CONTRIBUTOR') goto('/dashboard/contributor');
-			else error = 'Akun ini tidak punya akses CMS';
+			enter(accessToken, json.data?.refreshToken ?? null);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Login gagal';
 		} finally {
 			submitting = false;
+		}
+	}
+
+	/** Simpan sesi lalu buka area sesuai peran (password & biometrik). */
+	function enter(accessToken: string, refreshToken: string | null) {
+		setTokens(accessToken, refreshToken);
+		const role = decodeJwt(accessToken)?.role;
+		if (role === 'ADMIN') goto('/dashboard');
+		else if (role === 'CONTRIBUTOR') goto('/dashboard/contributor');
+		else error = 'Akun ini tidak punya akses CMS';
+	}
+
+	async function onBiometric() {
+		if (biometricBusy) return;
+		error = '';
+		biometricBusy = true;
+		try {
+			const { accessToken, refreshToken } = await loginWithPasskey();
+			enter(accessToken, refreshToken);
+		} catch (err) {
+			// Dialog ditutup tanpa passkey = paling sering karena perangkat ini belum didaftarkan (macOS hanya
+			// menawarkan Touch ID bila passkey untuk situs ini sudah ada di perangkat).
+			const cancelled = err instanceof Error && (err.name === 'NotAllowedError' || err.name === 'AbortError');
+			error = cancelled ? FIRST_TIME_HINT : passkeyErrorMessage(err);
+		} finally {
+			biometricBusy = false;
 		}
 	}
 </script>
@@ -67,12 +94,16 @@
 		<!-- Lampu safelight: cahaya yang menandakan film sedang ditangani -->
 		<div class="lamp" aria-hidden="true"></div>
 		<div class="relative flex min-h-64 flex-col justify-between gap-10 p-8 sm:p-12 md:min-h-screen">
-			<p class="rise font-mono text-[10.5px] uppercase tracking-[0.22em] text-paper/60">
-				<span class="text-safelight">▍</span> Lakuna Studio / CMS
-			</p>
+			<!-- Logo sama dengan navbar situs (static/logo1-sm.png), diputihkan di atas latar gelap. -->
+			<div class="rise">
+				<img src="/logo1-sm.png" alt="Lakuna" width="200" height="36" class="block h-7 w-auto [filter:brightness(0)_invert(1)]" />
+				<p class="mt-2.5 font-mono text-[10.5px] uppercase tracking-[0.22em] text-paper/60">
+					<span class="text-safelight">▍</span> Studio / CMS
+				</p>
+			</div>
 			<div>
 				<h1 class="rise font-display text-[clamp(2.6rem,5.2vw,4.6rem)] font-normal leading-[1.02] tracking-[-0.015em]" style="animation-delay:80ms">
-					Masuk<br />ruang <em class="text-safelight not-italic underline decoration-safelight/60 decoration-2 underline-offset-8">gelap</em>.
+					CMS<br /><em class="text-safelight not-italic underline decoration-safelight/60 decoration-2 underline-offset-8">Admin</em>.
 				</h1>
 				<p class="rise mt-6 max-w-xs text-[0.95rem] leading-relaxed text-paper/60" style="animation-delay:160ms">
 					Pintu staf Lakuna. Satu kunci untuk Admin &amp; Kontributor — peran dibaca dari akun.
@@ -113,6 +144,26 @@
 			>
 				{submitting ? 'Membuka…' : 'Masuk →'}
 			</button>
+
+			{#if biometric}
+				<div class="mt-5 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ash-2" aria-hidden="true">
+					<span class="h-px flex-1 bg-ink/10"></span>atau<span class="h-px flex-1 bg-ink/10"></span>
+				</div>
+				<button
+					type="button"
+					onclick={onBiometric}
+					disabled={biometricBusy}
+					class="mt-5 flex w-full items-center justify-center gap-2.5 rounded-[3px] border border-ink/15 py-3.5 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:border-safelight hover:text-safelight-dim disabled:opacity-40"
+				>
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" /><path d="M14 13.12c0 2.38 0 6.38-1 8.88" /><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" /><path d="M2 12a10 10 0 0 1 18-6" /><path d="M2 16h.01" /><path d="M21.8 16c.2-2 .131-5.354 0-6" /><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" /><path d="M8.65 22c.21-.66.45-1.32.57-2" /><path d="M9 6.8a6 6 0 0 1 9 5.2v2" />
+					</svg>
+					{biometricBusy ? 'Menunggu biometrik…' : 'Masuk dengan biometrik'}
+				</button>
+				<p class="mt-3 text-center text-[12px] leading-relaxed text-ash">
+					Pertama kali? Masuk dengan password, lalu daftarkan sidik jari / Face ID di menu Keamanan.
+				</p>
+			{/if}
 
 			<p class="mt-6 text-center font-mono text-[10.5px] uppercase tracking-[0.18em] text-ash-2">
 				Admin · Kontributor
