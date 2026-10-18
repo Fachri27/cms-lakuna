@@ -53,10 +53,12 @@ export async function loginWithPasskey(): Promise<{ accessToken: string; refresh
 	return { accessToken, refreshToken: out.data?.refreshToken ?? null };
 }
 
-/** Daftarkan perangkat ini sebagai passkey untuk akun yang sedang login. */
-export async function registerPasskey(deviceName: string): Promise<PasskeyDevice> {
+/** Daftarkan perangkat ini sebagai passkey untuk akun yang sedang login. Password wajib dikonfirmasi ulang
+ *  (API menolak tanpanya): token curian tak boleh menanam passkey penyerang. */
+export async function registerPasskey(deviceName: string, password: string): Promise<PasskeyDevice> {
 	const options = await api<PublicKeyCredentialCreationOptionsJSON>('/auth/webauthn/register/options', {
-		method: 'POST'
+		method: 'POST',
+		body: JSON.stringify({ password })
 	});
 	const response = await startRegistration({ optionsJSON: options });
 	return api<PasskeyDevice>('/auth/webauthn/register/verify', {

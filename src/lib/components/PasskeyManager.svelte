@@ -22,6 +22,7 @@
 	let loading = $state(true);
 	let supported = $state(true);
 	let deviceName = $state('');
+	let password = $state('');
 	let busy = $state(false);
 	let message = $state('');
 	let error = $state('');
@@ -59,11 +60,16 @@
 
 	async function add() {
 		if (busy) return;
+		if (!password) {
+			error = 'Masukkan password akun untuk konfirmasi.';
+			return;
+		}
 		busy = true;
 		error = '';
 		message = '';
 		try {
-			const d = await registerPasskey(deviceName);
+			const d = await registerPasskey(deviceName, password);
+			password = '';
 			devices = [d, ...devices];
 			message = 'Perangkat terdaftar. Berikutnya kamu bisa masuk dengan biometrik.';
 		} catch (err) {
@@ -109,6 +115,10 @@
 				<div class="sm:w-72">
 					<label for="pk-name" class={labelCls}>Nama perangkat</label>
 					<input id="pk-name" class={inputCls} maxlength="100" placeholder="mis. MacBook kantor" bind:value={deviceName} />
+				</div>
+				<div class="sm:w-60">
+					<label for="pk-pass" class={labelCls}>Password akun</label>
+					<input id="pk-pass" type="password" autocomplete="current-password" class={inputCls} maxlength="72" placeholder="Konfirmasi password" bind:value={password} />
 				</div>
 				<Btn variant="primary" disabled={busy} onclick={add}>
 					{busy ? 'Menunggu biometrik…' : 'Daftarkan biometrik'}
