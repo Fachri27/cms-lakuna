@@ -99,10 +99,11 @@
 	const wanted = $derived(form.type === 'VIDEO' ? 1 : form.count);
 	const overLimit = $derived(!!limit && limit.remaining !== null && wanted > limit.remaining);
 	const offline = $derived(provider?.online === false);
-	const modelOptions = $derived(form.type === 'FOTO' ? (provider?.models ?? []) : []);
+	const modelOptions = $derived(provider?.models ?? []);
 	const selectedModel = $derived(modelOptions.find((m) => m.id === form.model) ?? modelOptions[0] ?? null);
 	const modelLabel = (j: AiJob) =>
-		config?.image?.models?.find((m) => m.id === j.model)?.label ?? (j.model && j.model !== 'simulasi' ? j.model : '');
+		(j.type === 'VIDEO' ? config?.video : config?.image)?.models?.find((m) => m.id === j.model)?.label ??
+		(j.model && j.model !== 'simulasi' ? j.model : '');
 	const canSubmit = $derived(!!provider?.configured && !offline && !overLimit && !submitting && form.prompt.trim().length >= 5);
 	/** Masih diproses atau masih ada hasil yang menunggu kurasi. Yang sudah tuntas dikurasi tak tampil lagi di kanvas. */
 	const needsAttention = (j: AiJob) => isOpen(j.status) || j.photos.some((p) => p.status === 'PENDING');
@@ -609,13 +610,15 @@
 						</span>
 						<span class="truncate">
 							{offline
-								? 'Server AI lokal belum menyala — jalankan apps/api/scripts/ai-local/start.sh di Mac ini'
+								? form.type === 'VIDEO'
+									? 'Server AI lokal mati atau model video belum dikonversi — lihat apps/api/scripts/ai-local/README.md'
+									: 'Server AI lokal belum menyala — jalankan apps/api/scripts/ai-local/start.sh di Mac ini'
 								: provider.provider === 'SIMULASI'
 									? 'Mode lokal: hasil contoh, bukan buatan AI sungguhan'
 									: provider.provider === 'POLLINATIONS'
 										? 'Pollinations: ≤768 px & berlogo pollinations.ai — untuk uji coba, jangan disetujui untuk dijual'
 										: provider.provider === 'LOKAL'
-											? `Dibuat di Mac ini dengan ${selectedModel?.label ?? provider.model} — gratis, tanpa logo, ${selectedModel?.hint.split('·')[1]?.trim() ?? '±3–4 menit'} per gambar`
+											? `Dibuat di Mac ini dengan ${selectedModel?.label ?? provider.model} — gratis, tanpa logo, ${selectedModel?.hint.split('·').at(-1)?.trim() ?? '±3–4 menit'} per ${form.type === 'VIDEO' ? 'video' : 'gambar'}`
 											: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
 						</span>
 						{#if !offline}
@@ -671,8 +674,8 @@
 									</div>
 								{/if}
 							</div>
-							<!-- Model (penyedia dengan pilihan model) -->
-							{#if modelOptions.length > 1}
+							<!-- Model (penyedia dengan pilihan model; satu pilihan tetap ditampilkan sebagai keterangan) -->
+							{#if modelOptions.length > 0}
 								<div class="relative" data-menu>
 									<button
 										type="button"
@@ -1085,7 +1088,11 @@
 										>
 									</p>
 									<p>
-										Video: <span class="text-neutral-200">{config?.video?.configured ? `${config.video.provider} · ${config.video.model}` : 'belum dipasang'}</span>
+										Video: <span class="text-neutral-200"
+											>{config?.video?.configured
+												? `${config.video.provider} · ${config.video.models?.map((m) => m.label).join(' / ') ?? config.video.model}`
+												: 'belum dipasang'}</span
+										>
 									</p>
 									<p class="pt-1 text-[11px] text-neutral-500">Diatur di server API: AI_IMAGE_PROVIDER, AI_VIDEO_PROVIDER + kunci API.</p>
 								</div>
