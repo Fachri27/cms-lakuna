@@ -23,6 +23,18 @@
 	/** Setting gagal dimuat → simpan dinonaktifkan supaya nilai asli tidak tertimpa. */
 	let loadFailed = $state(false);
 
+	/** Batas unggah kontributor (API: modules/uploadLimit). 0 = tanpa batas; admin tak pernah dibatasi. */
+	const LIMIT_FIELDS = [
+		{ key: 'contributor_upload_daily_limit', label: 'Per hari', max: 10000 },
+		{ key: 'contributor_upload_monthly_limit', label: 'Per bulan', max: 100000 },
+		{ key: 'contributor_pending_limit', label: 'Antrean kurasi', max: 100000 },
+		{ key: 'contributor_photo_max_mb', label: 'Maks foto (MB)', max: 2048 },
+		{ key: 'contributor_video_max_mb', label: 'Maks video (MB)', max: 10240 }
+	] as const;
+	let limits = $state<Record<string, string>>({});
+	let limitsSaving = $state(false);
+	let limitsMsg = $state('');
+
 	onMount(() => {
 		void fetchSettings();
 	});
@@ -35,6 +47,8 @@
 			]);
 			presets = JSON.parse(presetVal?.value || '[]');
 			sharePct = shareVal?.value || '70';
+			const vals = await Promise.all(LIMIT_FIELDS.map((f) => api<{ value?: string }>(`/settings/${f.key}`)));
+			limits = Object.fromEntries(LIMIT_FIELDS.map((f, i) => [f.key, vals[i]?.value ?? '']));
 		} catch {
 			// Nilai bawaan hanya ada di API (SETTING_DEFAULTS). Jangan isi angka tebakan di sini: menyimpan dari
 			// keadaan itu akan menimpa preset & persentase yang sebenarnya.
@@ -98,6 +112,29 @@
 			shareMsg = 'Gagal menyimpan';
 		} finally {
 			shareSaving = false;
+		}
+	}
+
+	async function saveLimits() {
+		if (loadFailed) return;
+		for (const f of LIMIT_FIELDS) {
+			const v = String(limits[f.key] ?? '').trim();
+			if (!/^\d+$/.test(v) || Number(v) > f.max) {
+				limitsMsg = `Harus angka 0–${f.max.toLocaleString('id-ID')}: ${f.label}`;
+				return;
+			}
+		}
+		limitsSaving = true;
+		limitsMsg = '';
+		try {
+			for (const f of LIMIT_FIELDS) {
+				await api(`/settings/${f.key}`, { method: 'PATCH', body: JSON.stringify({ value: String(Number(limits[f.key])) }) });
+			}
+			limitsMsg = 'Berhasil disimpan';
+		} catch (err) {
+			limitsMsg = `Gagal menyimpan${err instanceof Error && err.message ? `: ${err.message}` : ''}`;
+		} finally {
+			limitsSaving = false;
 		}
 	}
 
@@ -189,6 +226,36 @@
 			<p class={cn('mt-3 font-mono text-[11px]', isError(shareMsg) ? 'text-safelight-dim' : 'text-safelight')}>
 				{shareMsg}
 			</p>
+		{/if}
+	</Panel>
+
+	<Panel class="p-7 sm:col-span-2">
+		<Kicker class="mb-2">Kontributor</Kicker>
+		<h2 class="font-display text-2xl tracking-[-0.01em] mb-2">Batas Unggah</h2>
+		<p class="text-sm text-ash mb-5">
+			Jumlah berkas yang boleh diunggah tiap kontributor per hari & per bulan (kalender WIB; dihapus atau ditolak
+			tetap terhitung), jumlah karya yang boleh menunggu kurasi sekaligus, dan ukuran berkas maksimum (tak bisa
+			melebihi batas server, bawaan 2 GB). Admin tidak dibatasi. Isi <span class="font-mono">0</span> untuk tanpa batas. Batas khusus atau pencabutan hak unggah per
+			kontributor diatur di halaman Pengguna.
+		</p>
+		{#if loading}
+			<Skeleton class="h-16" />
+		{:else}
+			<div class="grid items-end gap-4 sm:grid-cols-3 lg:grid-cols-5">
+				{#each LIMIT_FIELDS as f (f.key)}
+					<Field label={f.label}>
+						<input type="number" min={0} max={f.max} bind:value={limits[f.key]} class={cn(inputCls, 'tnum')} />
+					</Field>
+				{/each}
+			</div>
+			<div class="mt-5 flex items-center gap-4">
+				<Btn variant="dark" onclick={saveLimits} disabled={limitsSaving || loadFailed}>
+					{#if limitsSaving}<Spinner />Menyimpan{:else}Simpan batas{/if}
+				</Btn>
+				{#if limitsMsg}
+					<p class={cn('font-mono text-[11px]', isError(limitsMsg) ? 'text-safelight-dim' : 'text-safelight')}>{limitsMsg}</p>
+				{/if}
+			</div>
 		{/if}
 	</Panel>
 	</div>

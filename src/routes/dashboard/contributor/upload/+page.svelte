@@ -10,6 +10,8 @@
 	import Field from '$lib/components/Field.svelte';
 	import Btn from '$lib/components/Btn.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import UploadQuotaPanel from '$lib/components/UploadQuotaPanel.svelte';
+	import { blockedMessage, fetchMyQuota, fileTooBig, type UploadQuota } from '$lib/upload-quota';
 
 
 
@@ -31,8 +33,17 @@
 	let preview = $state<string | null>(null);
 	let fileType = $state<'image' | 'video'>('image');
 	let pricePresets = $state<number[]>([]);
+	/** Kuota unggah akun ini (null = belum/gagal dimuat — server tetap menegakkannya). */
+	let quota = $state<UploadQuota | null>(null);
+
+	function loadQuota() {
+		fetchMyQuota()
+			.then((q) => (quota = q))
+			.catch(() => {});
+	}
 
 	onMount(() => {
+		loadQuota();
 		api<{ value?: string }>('/settings/photo_price_presets')
 			.then((d) => {
 				pricePresets = JSON.parse(d?.value || '[]');
@@ -49,6 +60,14 @@
 	function handleFile(e: Event) {
 		const selected = (e.currentTarget as HTMLInputElement).files?.[0];
 		if (!selected) return;
+		// Berkas melebihi batas ukuran kontributor ditolak di sini — tak perlu menunggu unggahan ratusan MB selesai.
+		const tooBig = fileTooBig(selected, quota);
+		if (tooBig) {
+			errors = { ...errors, file: tooBig };
+			(e.currentTarget as HTMLInputElement).value = '';
+			return;
+		}
+		errors = { ...errors, file: '' };
 		file = selected;
 		fileType = selected.type.startsWith('video/') ? 'video' : 'image';
 		preview = URL.createObjectURL(selected);
@@ -65,6 +84,11 @@
 		if (takenErr) newErrors.takenAt = takenErr;
 		if (Object.keys(newErrors).length > 0) {
 			errors = newErrors;
+			return;
+		}
+		const blocked = quota ? blockedMessage(quota) : null;
+		if (blocked) {
+			errors = { general: blocked };
 			return;
 		}
 		loading = true;
@@ -90,6 +114,8 @@
 				} else {
 					errors = { general: (msg as string) || 'Terjadi kesalahan' };
 				}
+				// Kuota habis / dicabut / unggahan lain berjalan: perbarui meteran supaya sebabnya terlihat.
+				if ([403, 409, 413, 429].includes(res.status)) loadQuota();
 				return;
 			}
 			alert('Foto berhasil diupload dan menunggu persetujuan admin');
@@ -106,6 +132,10 @@
 <div>
 	<div class="rise py-10">
 		<SectionHeader index="01" kicker="Kontribusi" title="Upload Foto" class="mb-8" />
+
+		{#if quota && !quota.unlimited}
+			<UploadQuotaPanel {quota} class="mb-5" />
+		{/if}
 
 		<Panel class="p-7">
 			<form onsubmit={handleSubmit} class="space-y-5">
@@ -271,7 +301,7 @@
 				</Field>
 				</div>
 
-				<Btn type="submit" variant="primary" disabled={loading} class="w-full">
+				<Btn type="submit" variant="primary" disabled={loading || quota?.canUpload === false} class="w-full">
 					{#if loading}<Spinner />Mengupload{:else}Upload{/if}
 				</Btn>
 			</form>

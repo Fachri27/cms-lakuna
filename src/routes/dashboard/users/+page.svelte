@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiEnvelope, apiFetch } from '$lib/api';
+	import { api, apiEnvelope, apiFetch } from '$lib/api';
 	import { inputCls, cn } from '$lib/ui-classes';
 	import Panel from '$lib/components/Panel.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
+	import UploadLimitModal from '$lib/components/UploadLimitModal.svelte';
 
 	interface User {
 		id: string;
@@ -27,6 +28,18 @@
 	let fetching = $state(true);
 	let editingRole = $state<string | null>(null);
 	let roleSavingId = $state<string | null>(null);
+	/** Kontributor ber-batas unggah khusus: userId → status (lihat UploadLimitModal). */
+	let limitOverrides = $state<Record<string, { blocked: boolean }>>({});
+	let limitUser = $state<User | null>(null);
+
+	async function fetchLimitOverrides() {
+		try {
+			const rows = await api<{ userId: string; blocked: boolean }[]>('/upload-limits/users');
+			limitOverrides = Object.fromEntries((rows ?? []).map((r) => [r.userId, { blocked: r.blocked }]));
+		} catch {
+			/* penanda saja — tabel tetap tampil */
+		}
+	}
 
 	async function fetchUsers() {
 		fetching = true;
@@ -43,6 +56,7 @@
 
 	onMount(() => {
 		void fetchUsers();
+		void fetchLimitOverrides();
 	});
 
 	async function updateRole(user: User, newRole: string, el: HTMLSelectElement) {
@@ -117,6 +131,7 @@
 							<th class={TH}>Username</th>
 							<th class={TH}>Email</th>
 							<th class={TH}>Role</th>
+							<th class={TH}>Unggah</th>
 							<th class={TH}>Newsletter</th>
 							<th class={TH}>Bergabung</th>
 						</tr>
@@ -158,6 +173,21 @@
 										</button>
 									{/if}
 								</td>
+								<td class="px-7 py-4">
+									{#if user.role === 'CONTRIBUTOR'}
+										{@const o = limitOverrides[user.id]}
+										<button
+											onclick={() => (limitUser = user)}
+											title="Atur batas unggah"
+											class="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/70 hover:text-safelight cursor-pointer"
+										>
+											<span class={cn('inline-block w-1.5 h-1.5 rounded-full', o?.blocked ? 'bg-safelight-dim' : o ? 'bg-safelight' : 'bg-ash-2')}></span>
+											{o?.blocked ? 'Dicabut' : o ? 'Khusus' : 'Global'}
+										</button>
+									{:else}
+										<span class="font-mono text-[11px] text-ash-2">—</span>
+									{/if}
+								</td>
 								<td class="px-7 py-4 font-mono text-[11px] text-ash">
 									{user.newsletter ? 'Ya' : 'Tidak'}
 								</td>
@@ -174,6 +204,20 @@
 			onchange={(p) => {
 				page = p;
 				void fetchUsers();
+			}}
+		/>
+	{/if}
+
+	{#if limitUser}
+		<UploadLimitModal
+			user={limitUser}
+			onclose={() => (limitUser = null)}
+			onsaved={(o) => {
+				const id = limitUser!.id;
+				const next = { ...limitOverrides };
+				if (o) next[id] = { blocked: o.blocked };
+				else delete next[id];
+				limitOverrides = next;
 			}}
 		/>
 	{/if}
