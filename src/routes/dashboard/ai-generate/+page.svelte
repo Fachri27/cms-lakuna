@@ -74,6 +74,7 @@
 	let totalPages = $state(1);
 
 	let tab = $state<Tab>('detail');
+	/** Permintaan yang dibuka admin (dari Riwayat / baru dikirim); null = otomatis: yang masih perlu perhatian. */
 	let selectedJobId = $state<string | null>(null);
 	let selectedPhotoId = $state<string | null>(null);
 	/** Menu chip yang terbuka di bilah prompt. */
@@ -95,11 +96,22 @@
 	const limit = $derived(form.type === 'VIDEO' ? config?.limits.video : config?.limits.image);
 	const wanted = $derived(form.type === 'VIDEO' ? 1 : form.count);
 	const overLimit = $derived(!!limit && limit.remaining !== null && wanted > limit.remaining);
-	const canSubmit = $derived(!!provider?.configured && !overLimit && !submitting && form.prompt.trim().length >= 5);
-	const selectedJob = $derived(jobs.find((j) => j.id === selectedJobId) ?? jobs[0] ?? null);
-	const selectedPhoto = $derived(
-		selectedJob ? (selectedJob.photos.find((p) => p.id === selectedPhotoId) ?? selectedJob.photos[0] ?? null) : null
+	const offline = $derived(provider?.online === false);
+	const canSubmit = $derived(!!provider?.configured && !offline && !overLimit && !submitting && form.prompt.trim().length >= 5);
+	/** Masih diproses atau masih ada hasil yang menunggu kurasi. Yang sudah tuntas dikurasi tak tampil lagi di kanvas. */
+	const needsAttention = (j: AiJob) => isOpen(j.status) || j.photos.some((p) => p.status === 'PENDING');
+	const selectedJob = $derived(
+		selectedJobId ? (jobs.find((j) => j.id === selectedJobId) ?? null) : (jobs.find(needsAttention) ?? null)
 	);
+	const selectedPhoto = $derived(
+		selectedJob
+			? (selectedJob.photos.find((p) => p.id === selectedPhotoId) ??
+				selectedJob.photos.find((p) => p.status === 'PENDING') ??
+				selectedJob.photos[0] ??
+				null)
+			: null
+	);
+	const allCurated = $derived(jobs.length > 0 && !jobs.some(needsAttention));
 	const pendingSlots = $derived(
 		selectedJob && isOpen(selectedJob.status) ? Math.max(0, selectedJob.count - selectedJob.done - selectedJob.failed) : 0
 	);
@@ -299,12 +311,35 @@
 		jobs = jobs.map((j) => (j.id === jobId ? { ...j, photos: j.photos.map((p) => (p.id === photoId ? { ...p, ...patch } : p)) } : j));
 	}
 
+	/**
+	 * Setelah menyetujui/menolak: lanjut ke hasil berikutnya yang masih menunggu; bila semua hasil permintaan ini
+	 * sudah dikurasi (dan tak ada yang masih dibuat), kanvas dikosongkan sejenak kemudian (status barunya sempat
+	 * terlihat) — tetap bisa dibuka lagi dari Riwayat.
+	 */
+	function afterCurate(jobId: string) {
+		const j = jobs.find((x) => x.id === jobId);
+		if (!j) return;
+		const next = j.photos.find((p) => p.status === 'PENDING');
+		if (next) {
+			selectPhoto(next.id);
+			return;
+		}
+		if (isOpen(j.status)) return;
+		setTimeout(() => {
+			if (selectedJob?.id !== jobId || needsAttention(j)) return;
+			selectedJobId = null;
+			selectedPhotoId = null;
+			rejectOpen = false;
+		}, 700);
+	}
+
 	async function approve(job: AiJob, photo: AiPhoto) {
 		acting = photo.id;
 		actMsg = '';
 		try {
 			await api(`/photos/${photo.id}/approve`, { method: 'PATCH' });
 			patchPhoto(job.id, photo.id, { status: 'APPROVED', rejectNote: null });
+			afterCurate(job.id);
 		} catch (err) {
 			actMsg = err instanceof Error ? err.message : 'Gagal';
 		} finally {
@@ -321,6 +356,7 @@
 			patchPhoto(job.id, photo.id, { status: 'REJECTED', rejectNote: note ?? null });
 			rejectNote = '';
 			rejectOpen = false;
+			afterCurate(job.id);
 		} catch (err) {
 			actMsg = err instanceof Error ? err.message : 'Gagal';
 		} finally {
@@ -335,6 +371,7 @@
 		try {
 			await api(`/ai-generations/${job.id}/approve-all`, { method: 'POST', headers: { 'Idempotency-Key': crypto.randomUUID() } });
 			for (const p of job.photos) if (p.status === 'PENDING') patchPhoto(job.id, p.id, { status: 'APPROVED' });
+			afterCurate(job.id);
 		} catch (err) {
 			actMsg = err instanceof Error ? err.message : 'Gagal';
 		} finally {
@@ -509,7 +546,7 @@
 						<div class="mx-auto mb-4 grid size-12 place-items-center rounded-2xl bg-white/[0.06]">
 							<Sparkles size={22} class="text-[#a78bfa]" />
 						</div>
-						<p class="mb-1 text-[17px] font-medium">Buat foto atau video dengan AI</p>
+						<p class="mb-1 text-[17px] font-medium">{allCurated ? 'Semua hasil sudah dikurasi' : 'Buat foto atau video dengan AI'}</p>
 						<p class="mb-5 text-[13px] text-neutral-400">
 							Tulis prompt di bawah. Setiap hasil masuk katalog berkategori AI Generated dan menunggu kurasi sebelum tayang.
 						</p>
@@ -542,25 +579,38 @@
 
 			<!-- Bilah prompt mengambang -->
 			<form onsubmit={submit} class="absolute bottom-3 left-1/2 z-10 w-[min(720px,calc(100%-1.5rem))] -translate-x-1/2 sm:bottom-4">
-				{#if config && provider && !hintsClosed.includes(provider.provider)}
+				{#if config && provider && (offline || !hintsClosed.includes(provider.provider))}
 					<div
 						class="mx-auto mb-2 flex w-fit max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-[#161616]/90 py-1 pl-1.5 pr-1 text-[12px] text-neutral-300 backdrop-blur"
 					>
 						<span
 							class={cn(
 								'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
-								provider.provider === 'POLLINATIONS' ? 'bg-amber-400/20 text-amber-200' : 'bg-[#7c3aed]/25 text-[#c4b5fd]'
+								provider.provider === 'POLLINATIONS' || offline ? 'bg-amber-400/20 text-amber-200' : 'bg-[#7c3aed]/25 text-[#c4b5fd]'
 							)}
 						>
-							{provider.provider === 'SIMULASI' ? 'Simulasi' : provider.provider === 'POLLINATIONS' ? 'Gratis' : 'Baru'}
+							{offline
+								? 'Mati'
+								: provider.provider === 'SIMULASI'
+									? 'Simulasi'
+									: provider.provider === 'POLLINATIONS'
+										? 'Gratis'
+										: provider.provider === 'LOKAL'
+											? 'Lokal'
+											: 'Baru'}
 						</span>
 						<span class="truncate">
-							{provider.provider === 'SIMULASI'
-								? 'Mode lokal: hasil contoh, bukan buatan AI sungguhan'
-								: provider.provider === 'POLLINATIONS'
-									? 'Pollinations: ≤768 px & berlogo pollinations.ai — untuk uji coba, jangan disetujui untuk dijual'
-									: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
+							{offline
+								? 'Server AI lokal belum menyala — jalankan apps/api/scripts/ai-local/start.sh di Mac ini'
+								: provider.provider === 'SIMULASI'
+									? 'Mode lokal: hasil contoh, bukan buatan AI sungguhan'
+									: provider.provider === 'POLLINATIONS'
+										? 'Pollinations: ≤768 px & berlogo pollinations.ai — untuk uji coba, jangan disetujui untuk dijual'
+										: provider.provider === 'LOKAL'
+											? `Dibuat di Mac ini (${provider.model}) — gratis, tanpa logo, ±1 menit per gambar`
+											: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
 						</span>
+						{#if !offline}
 						<button
 							type="button"
 							onclick={closeHint}
@@ -569,6 +619,7 @@
 						>
 							<X size={13} />
 						</button>
+						{/if}
 					</div>
 				{/if}
 				<div class="rounded-2xl border border-white/[0.09] bg-[#1a1a1a] p-2.5 shadow-[0_20px_60px_rgba(0,0,0,0.55)] transition-colors focus-within:border-white/20">
@@ -751,7 +802,11 @@
 			<div class="min-h-0 flex-1 overflow-y-auto p-3">
 				{#if tab === 'detail'}
 					{#if !selectedJob}
-						<p class="px-1 py-6 text-center text-[13px] text-neutral-500">Belum ada hasil. Tulis prompt pertama di bilah bawah.</p>
+						<p class="px-1 py-6 text-center text-[13px] text-neutral-500">
+							{allCurated
+								? 'Tidak ada hasil yang menunggu kurasi. Hasil sebelumnya ada di tab Riwayat.'
+								: 'Belum ada hasil. Tulis prompt pertama di bilah bawah.'}
+						</p>
 					{:else}
 						{@const j = selectedJob}
 						<div class="space-y-3">
@@ -886,7 +941,11 @@
 											<p class="line-clamp-2 text-[12.5px] leading-snug text-neutral-200">{j.prompt}</p>
 											<p class="mt-0.5 flex items-center gap-1.5 text-[11px] text-neutral-500">
 												{#if j.type === 'VIDEO'}<Film size={11} />{:else}<ImageIcon size={11} />{/if}
-												{STATUS_LABEL[j.status]} · {j.done}/{j.count}{pendingOf(j) ? ` · ${pendingOf(j)} kurasi` : ''}
+												{STATUS_LABEL[j.status]} · {j.done}/{j.count}{pendingOf(j)
+													? ` · ${pendingOf(j)} menunggu kurasi`
+													: j.photos.length && !isOpen(j.status)
+														? ' · dikurasi'
+														: ''}
 											</p>
 										</div>
 									</button>

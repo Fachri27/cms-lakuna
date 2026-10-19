@@ -4,7 +4,14 @@ export type AiAspect = '1:1' | '3:2' | '2:3' | '16:9' | '9:16';
 export type AiType = 'FOTO' | 'VIDEO';
 export type AiStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'PARTIAL' | 'FAILED';
 
-export type AiProviderInfo = { provider: string; model: string; configured: boolean; aspects: AiAspect[] } | null;
+export type AiProviderInfo = {
+	provider: string;
+	model: string;
+	configured: boolean;
+	aspects: AiAspect[];
+	/** Server lokal: false = belum dinyalakan; null/undefined = penyedia cloud (tak dicek). */
+	online?: boolean | null;
+} | null;
 export type AiLimit = { limit: number; used: number; remaining: number | null };
 
 export type AiConfig = {
