@@ -607,7 +607,7 @@
 									: provider.provider === 'POLLINATIONS'
 										? 'Pollinations: ≤768 px & berlogo pollinations.ai — untuk uji coba, jangan disetujui untuk dijual'
 										: provider.provider === 'LOKAL'
-											? `Dibuat di Mac ini (${provider.model}) — gratis, tanpa logo, ±1 menit per gambar`
+											? `Dibuat di Mac ini (${provider.model}) — gratis, tanpa logo, ±3–4 menit per gambar`
 											: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
 						</span>
 						{#if !offline}
