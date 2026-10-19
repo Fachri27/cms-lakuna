@@ -12,6 +12,8 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Spinner from '$lib/components/Spinner.svelte';
+	import AutoPayoutPanel from '$lib/components/AutoPayoutPanel.svelte';
+	import { PAYOUT_STATUS_LABEL } from '$lib/auto-payout';
 
 	interface Contributor {
 		id: string;
@@ -34,9 +36,13 @@
 	interface Payout {
 		id: string;
 		amount: number;
+		fee: number;
 		method: string;
 		reference: string | null;
 		status: string;
+		/** Dikirim sistem lewat gateway (pencairan otomatis). */
+		auto: boolean;
+		failureReason: string | null;
 		createdAt: string;
 		contributor: { email: string; realName: string | null } | null;
 	}
@@ -183,9 +189,11 @@
 <div class="rise">
 	<SectionHeader index="01" kicker="Pencairan" title="Bagi Hasil" class="mb-10" />
 
+	<AutoPayoutPanel index="02" onchange={fetchAll} />
+
 	<Panel class="mb-8">
 		<div class="px-7 py-5 border-b hairline border-solid">
-			<Kicker class="mb-1.5">02 — Settlement</Kicker>
+			<Kicker class="mb-1.5">03 — Settlement</Kicker>
 			<p class="font-display text-lg">Settlement langganan</p>
 		</div>
 		<div class="px-7 py-6">
@@ -226,7 +234,7 @@
 
 	<Panel class="mb-8">
 		<div class="px-7 py-5 border-b hairline border-solid">
-			<Kicker class="mb-1.5">03 — Saldo</Kicker>
+			<Kicker class="mb-1.5">04 — Saldo</Kicker>
 			<p class="font-display text-lg">Kontributor</p>
 		</div>
 		{#if loading}
@@ -265,7 +273,7 @@
 
 	<Panel>
 		<div class="px-7 py-5 border-b hairline border-solid">
-			<Kicker class="mb-1.5">04 — Riwayat</Kicker>
+			<Kicker class="mb-1.5">05 — Riwayat</Kicker>
 			<p class="font-display text-lg">Pencairan terbaru</p>
 		</div>
 		{#if loading}
@@ -281,11 +289,16 @@
 						<div class="min-w-0">
 							<p class="text-ink truncate">{p.contributor?.realName || p.contributor?.email || '—'}</p>
 							<p class="font-mono text-[11px] text-ash-2">
-								{p.method} · {new Date(p.createdAt).toLocaleString('id-ID')}{p.reference ? ` · ref ${p.reference}` : ''}
+								{p.auto ? 'Otomatis' : 'Manual'} · {p.method} · {new Date(p.createdAt).toLocaleString('id-ID')}{p.reference
+									? ` · ref ${p.reference}`
+									: ''}{p.fee ? ` · biaya ${formatPrice(p.fee)}` : ''}
 							</p>
+							{#if p.status === 'FAILED' && p.failureReason}
+								<p class="font-mono text-[11px] text-safelight-dim truncate">{p.failureReason}</p>
+							{/if}
 						</div>
 						<div class="flex items-center gap-4 shrink-0">
-							<Badge status={p.status} />
+							<Badge status={p.status}>{PAYOUT_STATUS_LABEL[p.status] ?? p.status}</Badge>
 							<span class="font-display text-base tnum">{formatPrice(p.amount)}</span>
 						</div>
 					</li>

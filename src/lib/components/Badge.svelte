@@ -6,6 +6,8 @@
 		COMPLETED: 'bg-safelight',
 		ACTIVE: 'bg-safelight',
 		PENDING: 'bg-ash',
+		PROCESSING: 'bg-ash animate-pulse',
+		FAILED: 'bg-safelight-dim',
 		REJECTED: 'bg-ink',
 		CANCELLED: 'bg-ink/30',
 		EXPIRED: 'bg-ink/30'
@@ -15,7 +17,7 @@
 		class: cls = '',
 		children
 	}: { status: string; class?: string; children?: import('svelte').Snippet } = $props();
-	const dot = DOT[status] ?? 'bg-ash-2';
+	const dot = $derived(DOT[status] ?? 'bg-ash-2');
 </script>
 
 <span class={cn('inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/70', cls)}>
