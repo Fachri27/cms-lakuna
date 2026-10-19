@@ -80,7 +80,8 @@
 	let menu = $state<'type' | 'aspect' | 'price' | null>(null);
 	/** Baris opsi (akordeon) yang terbuka di tab Opsi. */
 	let openOption = $state<string | null>('metadata');
-	let hintClosed = $state(false);
+	/** Petunjuk yang sudah ditutup, per penyedia (peringatan Pollinations tetap muncul walau petunjuk lain ditutup). */
+	let hintsClosed = $state<string[]>([]);
 
 	let limitDraft = $state({ image: '', video: '' });
 	let limitMsg = $state('');
@@ -111,7 +112,7 @@
 
 	onMount(() => {
 		try {
-			hintClosed = localStorage.getItem('ai-generate:hint') === '1';
+			hintsClosed = JSON.parse(localStorage.getItem('ai-generate:hints') || '[]');
 		} catch {
 			/* penyimpanan diblokir — petunjuk tampil lagi, tak apa */
 		}
@@ -279,9 +280,10 @@
 	}
 
 	function closeHint() {
-		hintClosed = true;
+		if (!provider) return;
+		hintsClosed = [...hintsClosed, provider.provider];
 		try {
-			localStorage.setItem('ai-generate:hint', '1');
+			localStorage.setItem('ai-generate:hints', JSON.stringify(hintsClosed));
 		} catch {
 			/* abaikan */
 		}
@@ -540,17 +542,24 @@
 
 			<!-- Bilah prompt mengambang -->
 			<form onsubmit={submit} class="absolute bottom-3 left-1/2 z-10 w-[min(720px,calc(100%-1.5rem))] -translate-x-1/2 sm:bottom-4">
-				{#if !hintClosed && config}
+				{#if config && provider && !hintsClosed.includes(provider.provider)}
 					<div
 						class="mx-auto mb-2 flex w-fit max-w-full items-center gap-2 rounded-full border border-white/[0.08] bg-[#161616]/90 py-1 pl-1.5 pr-1 text-[12px] text-neutral-300 backdrop-blur"
 					>
-						<span class="shrink-0 rounded-full bg-[#7c3aed]/25 px-2 py-0.5 text-[11px] font-medium text-[#c4b5fd]">
-							{provider?.provider === 'SIMULASI' ? 'Simulasi' : 'Baru'}
+						<span
+							class={cn(
+								'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
+								provider.provider === 'POLLINATIONS' ? 'bg-amber-400/20 text-amber-200' : 'bg-[#7c3aed]/25 text-[#c4b5fd]'
+							)}
+						>
+							{provider.provider === 'SIMULASI' ? 'Simulasi' : provider.provider === 'POLLINATIONS' ? 'Gratis' : 'Baru'}
 						</span>
 						<span class="truncate">
-							{provider?.provider === 'SIMULASI'
+							{provider.provider === 'SIMULASI'
 								? 'Mode lokal: hasil contoh, bukan buatan AI sungguhan'
-								: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
+								: provider.provider === 'POLLINATIONS'
+									? 'Pollinations: ≤768 px & berlogo pollinations.ai — untuk uji coba, jangan disetujui untuk dijual'
+									: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
 						</span>
 						<button
 							type="button"
