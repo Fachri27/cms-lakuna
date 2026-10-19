@@ -9,6 +9,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// URL dashboard tidak dikirim utuh ke origin lain.
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('X-Content-Type-Options', 'nosniff');
+	// Panel admin tak boleh muncul di mesin pencari (halaman login & alamatnya bocor ke hasil pencarian).
+	response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
 	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), usb=(), payment=()');
 	if (event.url.protocol === 'https:') {
 		response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
