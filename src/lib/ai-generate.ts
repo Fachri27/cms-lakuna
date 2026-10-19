@@ -11,7 +11,10 @@ export type AiProviderInfo = {
 	aspects: AiAspect[];
 	/** Server lokal: false = belum dinyalakan; null/undefined = penyedia cloud (tak dicek). */
 	online?: boolean | null;
+	/** Model yang bisa dipilih per permintaan (yang pertama = bawaan); null = penyedia tanpa pilihan. */
+	models?: AiModelOption[] | null;
 } | null;
+export type AiModelOption = { id: string; label: string; hint: string };
 export type AiLimit = { limit: number; used: number; remaining: number | null };
 
 export type AiConfig = {

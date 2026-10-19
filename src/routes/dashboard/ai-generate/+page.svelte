@@ -61,6 +61,8 @@
 		aspectRatio: '3:2' as AiAspect,
 		count: 2,
 		price: '',
+		/** Id model (penyedia dengan pilihan model, mis. lokal); '' = bawaan penyedia. */
+		model: '',
 		title: '',
 		keywords: '',
 		categoryIds: [] as string[]
@@ -78,7 +80,7 @@
 	let selectedJobId = $state<string | null>(null);
 	let selectedPhotoId = $state<string | null>(null);
 	/** Menu chip yang terbuka di bilah prompt. */
-	let menu = $state<'type' | 'aspect' | 'price' | null>(null);
+	let menu = $state<'type' | 'aspect' | 'price' | 'model' | null>(null);
 	/** Baris opsi (akordeon) yang terbuka di tab Opsi. */
 	let openOption = $state<string | null>('metadata');
 	/** Petunjuk yang sudah ditutup, per penyedia (peringatan Pollinations tetap muncul walau petunjuk lain ditutup). */
@@ -97,6 +99,10 @@
 	const wanted = $derived(form.type === 'VIDEO' ? 1 : form.count);
 	const overLimit = $derived(!!limit && limit.remaining !== null && wanted > limit.remaining);
 	const offline = $derived(provider?.online === false);
+	const modelOptions = $derived(form.type === 'FOTO' ? (provider?.models ?? []) : []);
+	const selectedModel = $derived(modelOptions.find((m) => m.id === form.model) ?? modelOptions[0] ?? null);
+	const modelLabel = (j: AiJob) =>
+		config?.image?.models?.find((m) => m.id === j.model)?.label ?? (j.model && j.model !== 'simulasi' ? j.model : '');
 	const canSubmit = $derived(!!provider?.configured && !offline && !overLimit && !submitting && form.prompt.trim().length >= 5);
 	/** Masih diproses atau masih ada hasil yang menunggu kurasi. Yang sudah tuntas dikurasi tak tampil lagi di kanvas. */
 	const needsAttention = (j: AiJob) => isOpen(j.status) || j.photos.some((p) => p.status === 'PENDING');
@@ -237,6 +243,7 @@
 					aspectRatio: form.aspectRatio,
 					count: wanted,
 					price,
+					model: selectedModel?.id,
 					title: form.title.trim() || undefined,
 					keywords: form.keywords.trim() || undefined,
 					categoryIds: form.categoryIds.length ? form.categoryIds : undefined
@@ -268,6 +275,7 @@
 		form.aspectRatio = j.aspectRatio;
 		form.count = j.type === 'VIDEO' ? 1 : Math.min(j.count, config?.maxImagesPerRequest ?? 4);
 		form.price = String(j.price);
+		form.model = j.model ?? '';
 		form.title = j.title ?? '';
 		form.keywords = j.keywords ?? '';
 		form.categoryIds = (j.categoryIds ?? []).filter((id) => categories.some((c) => c.id === id));
@@ -607,7 +615,7 @@
 									: provider.provider === 'POLLINATIONS'
 										? 'Pollinations: ≤768 px & berlogo pollinations.ai — untuk uji coba, jangan disetujui untuk dijual'
 										: provider.provider === 'LOKAL'
-											? `Dibuat di Mac ini (${provider.model}) — gratis, tanpa logo, ±3–4 menit per gambar`
+											? `Dibuat di Mac ini dengan ${selectedModel?.label ?? provider.model} — gratis, tanpa logo, ${selectedModel?.hint.split('·')[1]?.trim() ?? '±3–4 menit'} per gambar`
 											: 'Hasil otomatis masuk antre kurasi berkategori AI Generated'}
 						</span>
 						{#if !offline}
@@ -663,6 +671,42 @@
 									</div>
 								{/if}
 							</div>
+							<!-- Model (penyedia dengan pilihan model) -->
+							{#if modelOptions.length > 1}
+								<div class="relative" data-menu>
+									<button
+										type="button"
+										class={chip}
+										onclick={() => (menu = menu === 'model' ? null : 'model')}
+										aria-haspopup="menu"
+										aria-expanded={menu === 'model'}
+										title="Model AI"
+									>
+										<Sparkles size={15} />{selectedModel?.label}<ChevronDown size={13} class="text-neutral-500" />
+									</button>
+									{#if menu === 'model'}
+										<div class={cn(menuBox, 'min-w-60')} role="menu">
+											{#each modelOptions as m (m.id)}
+												<button
+													type="button"
+													role="menuitem"
+													class={menuItem}
+													onclick={() => {
+														form.model = m.id;
+														menu = null;
+													}}
+												>
+													<span class="flex flex-col">
+														<span>{m.label}</span>
+														<span class="text-[11px] text-neutral-500">{m.hint}</span>
+													</span>
+													{#if selectedModel?.id === m.id}<Check size={14} />{/if}
+												</button>
+											{/each}
+										</div>
+									{/if}
+								</div>
+							{/if}
 							<!-- Rasio -->
 							<div class="relative" data-menu>
 								<button
@@ -820,8 +864,8 @@
 								</div>
 								<p class="text-[13px] leading-relaxed text-neutral-200">{j.prompt}</p>
 								<p class="mt-2 text-[11px] text-neutral-500">
-									{j.type === 'VIDEO' ? 'Video' : 'Foto'} · {ASPECT_LABEL[j.aspectRatio]} · {j.provider}{j.model && j.model !== 'simulasi'
-										? ` ${j.model}`
+									{j.type === 'VIDEO' ? 'Video' : 'Foto'} · {ASPECT_LABEL[j.aspectRatio]} · {j.provider}{modelLabel(j)
+										? ` · ${modelLabel(j)}`
 										: ''} · {formatPrice(j.price)}
 								</p>
 								{#if j.error && j.status !== 'SUCCEEDED'}
@@ -1034,7 +1078,11 @@
 							{#if openOption === 'provider'}
 								<div class="space-y-1.5 px-1 pb-1 pt-3 text-[12px] text-neutral-400">
 									<p>
-										Gambar: <span class="text-neutral-200">{config?.image?.configured ? `${config.image.provider} · ${config.image.model}` : 'belum dipasang'}</span>
+										Gambar: <span class="text-neutral-200"
+											>{config?.image?.configured
+												? `${config.image.provider} · ${config.image.models?.map((m) => m.label).join(' / ') ?? config.image.model}`
+												: 'belum dipasang'}</span
+										>
 									</p>
 									<p>
 										Video: <span class="text-neutral-200">{config?.video?.configured ? `${config.video.provider} · ${config.video.model}` : 'belum dipasang'}</span>
