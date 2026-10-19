@@ -17,7 +17,8 @@
 		Settings,
 		FileText,
 		LogOut,
-		FingerprintPattern
+		FingerprintPattern,
+		Sparkles
 	} from '@lucide/svelte';
 
 	export const GROUPS = [
@@ -28,7 +29,8 @@
 				{ label: 'Beranda', href: '/dashboard/homepage', icon: LayoutTemplate },
 				{ label: 'Logo Pelanggan', href: '/dashboard/logos', icon: BadgeCheck },
 				{ label: 'Foto / Video', href: '/dashboard/photos', icon: Image },
-				{ label: 'Persetujuan', href: '/dashboard/approval', icon: ClipboardCheck }
+				{ label: 'Persetujuan', href: '/dashboard/approval', icon: ClipboardCheck },
+				{ label: 'AI Generate', href: '/dashboard/ai-generate', icon: Sparkles }
 			]
 		},
 		{
