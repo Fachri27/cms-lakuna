@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { getAccessToken, getRole, isExpired } from '$lib/auth';
+	import { restoreSession } from '$lib/api';
+	import { decodeJwt } from '$lib/auth';
 
-	onMount(() => {
-		const token = getAccessToken();
-		if (!token || isExpired(token)) {
-			goto('/login');
-			return;
-		}
-		if (getRole() === 'ADMIN') goto('/dashboard');
-		else if (getRole() === 'CONTRIBUTOR') goto('/dashboard/contributor');
+	onMount(async () => {
+		// Token akses kedaluwarsa tapi sesi masih hidup → diperpanjang dulu, bukan dilempar ke /login.
+		const token = await restoreSession();
+		const role = token ? decodeJwt(token)?.role : null;
+		if (role === 'ADMIN') goto('/dashboard');
+		else if (role === 'CONTRIBUTOR') goto('/dashboard/contributor');
 		else goto('/login');
 	});
 </script>

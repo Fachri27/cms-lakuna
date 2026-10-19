@@ -79,8 +79,8 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { clearTokens, ensureSession, logoutSession } from '$lib/api';
-	import { decodeJwt, getAccessToken, isExpired } from '$lib/auth';
+	import { logoutSession, restoreSession } from '$lib/api';
+	import { decodeJwt } from '$lib/auth';
 	import { cn } from '$lib/cn';
 
 	let { children }: { children: import('svelte').Snippet } = $props();
@@ -90,16 +90,15 @@
 	const pathname = $derived($page.url.pathname);
 	const isContributorRoute = $derived(pathname.startsWith('/dashboard/contributor'));
 
-	onMount(() => {
-		const token = getAccessToken();
-		if (!token || isExpired(token)) {
-			clearTokens();
+	onMount(async () => {
+		// Token akses kedaluwarsa (mis. tab dibuka lagi esok hari) → perpanjang lewat refresh token dulu.
+		const token = await restoreSession();
+		if (!token) {
 			goto('/login');
 			return;
 		}
 		const payload = decodeJwt(token);
 		role = (payload?.role as string) ?? null;
-		ensureSession(); // refresh proaktif sebelum akses kedaluwarsa
 		if (isContributorRoute) {
 			if (role !== 'CONTRIBUTOR' && role !== 'ADMIN') goto('/login');
 			else ready = true;

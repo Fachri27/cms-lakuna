@@ -155,9 +155,40 @@ function refreshSingleflight(): Promise<string | null> {
 	return inflight;
 }
 
+let watching = false;
+
 /** Dipanggil setelah setTokens & saat dashboard mount: jaga sesi tetap hidup. */
 export function ensureSession() {
 	scheduleProactive();
+	if (watching || typeof window === 'undefined') return;
+	watching = true;
+	// Tab di latar belakang: timer browser bisa tertunda lama → begitu tab terlihat lagi, cek & perpanjang.
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible' && getTokens().access) scheduleProactive();
+	});
+	// Tab lain sudah memperbarui token (localStorage bersama) → atur ulang jadwal dari token barunya,
+	// supaya dua tab tak me-refresh berbarengan.
+	window.addEventListener('storage', (e) => {
+		if (e.key === 'accessToken' && e.newValue) scheduleProactive();
+	});
+}
+
+/**
+ * Saat Studio dibuka: token akses masih berlaku → langsung dipakai; sudah/hampir kedaluwarsa tapi ada refresh token
+ * → sesi diperpanjang dulu (dulu langsung dilempar ke /login, padahal sesinya masih hidup sampai 30 hari).
+ * null = memang harus masuk lagi. Gagal jaringan bukan alasan keluar: token lama dipakai, refresh dicoba ulang.
+ */
+export async function restoreSession(): Promise<string | null> {
+	const { access, refresh } = getTokens();
+	const exp = accessExpMs(access);
+	if (access && exp && exp - Date.now() > REFRESH_SKEW_MS) {
+		ensureSession();
+		return access;
+	}
+	if (!refresh) return null;
+	const fresh = await refreshSingleflight();
+	ensureSession();
+	return fresh ?? getTokens().access;
 }
 
 async function tryRefresh(): Promise<string | null> {
