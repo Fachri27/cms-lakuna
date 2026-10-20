@@ -206,8 +206,9 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
-	// Segmen "." / ".." (mentah atau %2e) dari parameter URL bisa membelokkan request bertoken ke endpoint lain.
-	if (/(^|\/)(\.|%2e){1,2}(\/|$)/i.test(path.split(/[?#]/)[0])) throw new ApiError(400, 'Path tidak valid');
+	// Segmen "." / ".." (mentah atau %2e) dari parameter URL bisa membelokkan request bertoken ke endpoint lain;
+	// `\` dihitung pemisah karena parser URL browser memperlakukannya sama dengan `/`.
+	if (/(^|[\\/])(\.|%2e){1,2}([\\/]|$)/i.test(path.split(/[?#]/)[0])) throw new ApiError(400, 'Path tidak valid');
 	const { access } = getTokens();
 	const headers = new Headers(options.headers);
 	const isForm = options.body instanceof FormData;
