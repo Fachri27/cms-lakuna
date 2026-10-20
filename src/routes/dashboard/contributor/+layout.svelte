@@ -39,13 +39,14 @@
 				Keluar
 			</button>
 		</div>
-		<nav class="px-6 pb-5 flex gap-2">
+		<!-- Ponsel: 4 tab lebih lebar dari layar 390 px → bisa digeser, tak membuat halaman ikut melebar. -->
+		<nav class="px-6 pb-5 flex gap-2 overflow-x-auto [scrollbar-width:none]">
 			{#each NAV as item}
 				{@const active = pathname === item.href}
 				<a
 					href={item.href}
 					class={cn(
-						'px-3.5 py-2 rounded-[3px] font-mono text-[10.5px] uppercase tracking-[0.16em] transition-colors',
+						'shrink-0 whitespace-nowrap px-3.5 py-2 rounded-[3px] font-mono text-[10.5px] uppercase tracking-[0.16em] transition-colors',
 						active ? 'bg-paper/[0.08] text-paper' : 'text-paper/55 hover:text-paper/90 hover:bg-paper/[0.04]'
 					)}
 				>
@@ -55,5 +56,9 @@
 		</nav>
 	</header>
 
-	{@render children()}
+	<!-- Jarak tepi sama dengan header (px-6); jarak atas dari halaman (py-10). Layout admin membungkus halamannya
+	     sendiri, rute kontributor tidak. -->
+	<main class="px-6 pb-12 max-w-[1440px]">
+		{@render children()}
+	</main>
 </div>
