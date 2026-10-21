@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { api, ApiError } from '$lib/api';
 	import { formatPrice, formatTakenAt } from '$lib/format';
+	import { fmtDuration } from '$lib/sound-types';
 	import Panel from '$lib/components/Panel.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import Btn from '$lib/components/Btn.svelte';
@@ -27,6 +28,10 @@
 		originalUrl?: string | null;
 		type?: string;
 		price?: number;
+		/** AUDIO (Sounds): durasi detik, tempo, jenis. */
+		duration?: number | null;
+		bpm?: number | null;
+		audioKind?: string | null;
 		batchId?: string | null;
 		createdAt: string;
 		user?: { username?: string; email?: string } | null;
@@ -353,6 +358,7 @@
 		{@const d = active}
 		{@const many = g.items.length > 1}
 		{@const isVideo = (d.type || '').toUpperCase() === 'VIDEO'}
+		{@const isAudio = (d.type || '').toUpperCase() === 'AUDIO'}
 		{@const preview = (!origFailed[d.id] && d.originalUrl) || d.watermarkUrl || d.thumbUrl}
 		{@const isOriginal = !origFailed[d.id] && !!d.originalUrl}
 		<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8" role="dialog" aria-modal="true" aria-label={`Kurasi ${d.title}`}>
@@ -376,7 +382,18 @@
 				{#if preview}
 					<div class="mx-7 mt-5 overflow-hidden rounded-[4px] bg-ink/[0.04]">
 						{#key d.id}
-							{#if isVideo}
+							{#if isAudio}
+								<!-- Audio (Sounds): sampul + pemutar berkas asli (cadangan: pratinjau MP3 bertanda suara). -->
+								<div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
+									{@render thumb(d, 'h-32 w-32 shrink-0 rounded-[3px]')}
+									<div class="min-w-0 flex-1">
+										<p class={LBL}>
+											{d.audioKind === 'SFX' ? 'Efek suara' : 'Musik'} · {fmtDuration(d.duration)}{d.bpm ? ` · ${d.bpm} BPM` : ''}
+										</p>
+										<audio src={preview} controls preload="metadata" class="mt-3 w-full" onerror={() => (origFailed[d.id] = true)}></audio>
+									</div>
+								</div>
+							{:else if isVideo}
 								<!-- svelte-ignore a11y_media_has_caption -- pratinjau kurasi, tanpa audio -->
 								<video src={preview} controls playsinline preload="metadata" class="max-h-[60vh] w-full bg-ink" onerror={() => (origFailed[d.id] = true)}></video>
 							{:else}
@@ -387,9 +404,15 @@
 						{/key}
 					</div>
 					<p class="mx-7 mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-ash">
-						<span>{isOriginal ? 'File asli, resolusi penuh' : 'Pratinjau watermark (file asli tidak bisa ditampilkan)'}</span>
+						<span>
+							{#if isAudio}
+								{isOriginal ? 'Berkas audio asli' : 'Pratinjau MP3 bertanda suara (berkas asli tak bisa diputar di peramban ini)'}
+							{:else}
+								{isOriginal ? 'File asli, resolusi penuh' : 'Pratinjau watermark (file asli tidak bisa ditampilkan)'}
+							{/if}
+						</span>
 						{#if isOriginal}
-							{#if !isVideo}
+							{#if !isVideo && !isAudio}
 								<button type="button" class="underline underline-offset-2 hover:text-ink" onclick={() => openZoom(preview, d.title)}>Perbesar</button>
 							{/if}
 							<a href={preview} target="_blank" rel="noopener" class="underline underline-offset-2 hover:text-ink">Buka di tab baru</a>

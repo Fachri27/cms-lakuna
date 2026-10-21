@@ -69,9 +69,12 @@
 		if (!all.length) return;
 		const media = all.filter((f) => f.type.startsWith('image/') || f.type.startsWith('video/'));
 		const skipped = all.length - media.length;
+		const audio = all.filter((f) => f.type.startsWith('audio/')).length;
 		const first = items.length === 0;
 		items.push(...media.map((f, i) => newUploadItem(f, first && i === 0)));
-		general = skipped ? `${skipped} berkas dilewati — hanya foto atau video yang bisa diupload` : '';
+		general = skipped
+			? `${skipped} berkas dilewati — hanya foto atau video yang bisa diupload${audio ? ' (audio diunggah lewat menu Sounds)' : ''}`
+			: '';
 	}
 
 	function onPick(e: Event) {

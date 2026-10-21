@@ -18,7 +18,8 @@
 		FileText,
 		LogOut,
 		FingerprintPattern,
-		Sparkles
+		Sparkles,
+		AudioLines
 	} from '@lucide/svelte';
 
 	export const GROUPS = [
@@ -29,6 +30,7 @@
 				{ label: 'Beranda', href: '/dashboard/homepage', icon: LayoutTemplate },
 				{ label: 'Logo Pelanggan', href: '/dashboard/logos', icon: BadgeCheck },
 				{ label: 'Foto / Video', href: '/dashboard/photos', icon: Image },
+				{ label: 'Sounds', href: '/dashboard/sounds', icon: AudioLines },
 				{ label: 'Persetujuan', href: '/dashboard/approval', icon: ClipboardCheck },
 				{ label: 'AI Generate', href: '/dashboard/ai-generate', icon: Sparkles }
 			]
@@ -71,6 +73,7 @@
 	export const CONTRIBUTOR_NAV = [
 		{ label: 'Dashboard', href: '/dashboard/contributor', icon: LayoutDashboard },
 		{ label: 'Upload', href: '/dashboard/contributor/upload', icon: Image },
+		{ label: 'Sounds', href: '/dashboard/contributor/sounds', icon: AudioLines },
 		{ label: 'Penghasilan', href: '/dashboard/contributor/earnings', icon: Wallet }
 	];
 </script>

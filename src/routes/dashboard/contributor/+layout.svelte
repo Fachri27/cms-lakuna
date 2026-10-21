@@ -10,6 +10,7 @@
 	const NAV = [
 		{ label: 'Dashboard', href: '/dashboard/contributor' },
 		{ label: 'Upload', href: '/dashboard/contributor/upload' },
+		{ label: 'Sounds', href: '/dashboard/contributor/sounds' },
 		{ label: 'Penghasilan', href: '/dashboard/contributor/earnings' },
 		{ label: 'Keamanan', href: '/dashboard/contributor/security' }
 	];
@@ -39,7 +40,7 @@
 				Keluar
 			</button>
 		</div>
-		<!-- Ponsel: 4 tab lebih lebar dari layar 390 px → bisa digeser, tak membuat halaman ikut melebar. -->
+		<!-- Ponsel: 5 tab lebih lebar dari layar 390 px → bisa digeser, tak membuat halaman ikut melebar. -->
 		<nav class="px-6 pb-5 flex gap-2 overflow-x-auto [scrollbar-width:none]">
 			{#each NAV as item}
 				{@const active = pathname === item.href}

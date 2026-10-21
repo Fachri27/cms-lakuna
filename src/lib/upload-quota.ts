@@ -56,7 +56,9 @@ export function blockedMessage(q: UploadQuota): string | null {
 export function fileTooBig(file: File, q: UploadQuota | null): string | null {
 	if (!q || q.unlimited) return null;
 	const video = file.type.startsWith('video/');
-	const maxMb = video ? q.videoMaxMb : q.photoMaxMb;
+	// Audio (Sounds) memakai batas video — sama dengan API (uploadLimit.middleware).
+	const audio = file.type.startsWith('audio/');
+	const maxMb = video || audio ? q.videoMaxMb : q.photoMaxMb;
 	if (file.size <= maxMb * 1024 * 1024) return null;
-	return `${video ? 'Video' : 'Foto'} terlalu besar: ${fmtMb(Math.ceil(file.size / 1048576))} (maks ${fmtMb(maxMb)})`;
+	return `${video ? 'Video' : audio ? 'Audio' : 'Foto'} terlalu besar: ${fmtMb(Math.ceil(file.size / 1048576))} (maks ${fmtMb(maxMb)})`;
 }
