@@ -19,7 +19,8 @@
 		LogOut,
 		FingerprintPattern,
 		Sparkles,
-		AudioLines
+		AudioLines,
+		Mountain
 	} from '@lucide/svelte';
 
 	export const GROUPS = [
@@ -31,6 +32,7 @@
 				{ label: 'Logo Pelanggan', href: '/dashboard/logos', icon: BadgeCheck },
 				{ label: 'Foto / Video', href: '/dashboard/photos', icon: Image },
 				{ label: 'Sounds', href: '/dashboard/sounds', icon: AudioLines },
+				{ label: 'Ekowisata', href: '/dashboard/ecotourism', icon: Mountain },
 				{ label: 'Persetujuan', href: '/dashboard/approval', icon: ClipboardCheck },
 				{ label: 'AI Generate', href: '/dashboard/ai-generate', icon: Sparkles }
 			]
